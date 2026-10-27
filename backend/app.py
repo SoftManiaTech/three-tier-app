@@ -1,11 +1,35 @@
 import os
+import time
+import logging
 from decimal import Decimal, InvalidOperation
-from flask import Flask, jsonify, request
+from flask import Flask, g, jsonify, request
 from flask_cors import CORS
 from db import get_connection
 
 app = Flask(__name__)
 CORS(app)
+logger = logging.getLogger("myapp.audit")
+
+
+@app.before_request
+def start_request_timer():
+    g.request_started_at = time.perf_counter()
+
+
+@app.after_request
+def log_request(response):
+    """Log one concise record for every HTTP request without logging its body."""
+    started_at = getattr(g, "request_started_at", None)
+    duration_ms = (time.perf_counter() - started_at) * 1000 if started_at else 0
+    app.logger.info(
+        'request method=%s path=%s status=%s duration_ms=%.2f remote_addr=%s',
+        request.method,
+        request.path,
+        response.status_code,
+        duration_ms,
+        request.remote_addr or "unknown",
+    )
+    return response
 
 
 def format_product(product):
@@ -57,7 +81,7 @@ def get_products():
         products = [format_product(row) for row in rows]
         return jsonify(products), 200
     except Exception:
-        app.logger.exception("Unable to retrieve products")
+        logger.exception("product.list.failed")
         return jsonify({"error": "Unable to retrieve products"}), 500
     finally:
         if cursor is not None:
@@ -83,7 +107,7 @@ def get_product(id):
             return jsonify({"error": "Product not found"}), 404
         return jsonify(format_product(product)), 200
     except Exception:
-        app.logger.exception("Unable to retrieve product %s", id)
+        logger.exception("product.read.failed product_id=%s", id)
         return jsonify({"error": "Unable to retrieve product"}), 500
     finally:
         if cursor is not None:
@@ -147,6 +171,7 @@ def create_product():
         )
         conn.commit()
         product_id = cursor.lastrowid
+        logger.info("product.create.success product_id=%s", product_id)
 
         cursor.execute(
             "SELECT id, name, description, category, price, created_at, updated_at "
@@ -158,7 +183,7 @@ def create_product():
     except Exception:
         if conn is not None:
             conn.rollback()
-        app.logger.exception("Unable to create product")
+        logger.exception("product.create.failed")
         return jsonify({"error": "Unable to save product"}), 500
     finally:
         if cursor is not None:
@@ -236,6 +261,7 @@ def update_product(id):
             (name, description, category, price, id),
         )
         conn.commit()
+        logger.info("product.update.success product_id=%s", id)
 
         cursor.execute(
             "SELECT id, name, description, category, price, created_at, updated_at "
@@ -247,7 +273,7 @@ def update_product(id):
     except Exception:
         if conn is not None:
             conn.rollback()
-        app.logger.exception("Unable to update product %s", id)
+        logger.exception("product.update.failed product_id=%s", id)
         return jsonify({"error": "Unable to update product"}), 500
     finally:
         if cursor is not None:
@@ -267,11 +293,12 @@ def delete_product(id):
         if cursor.rowcount == 0:
             return jsonify({"error": "Product not found"}), 404
         conn.commit()
+        logger.info("product.delete.success product_id=%s", id)
         return jsonify({"message": "Product deleted successfully", "id": id}), 200
     except Exception:
         if conn is not None:
             conn.rollback()
-        app.logger.exception("Unable to delete product %s", id)
+        logger.exception("product.delete.failed product_id=%s", id)
         return jsonify({"error": "Unable to delete product"}), 500
     finally:
         if cursor is not None:
@@ -296,7 +323,7 @@ def get_categories():
         categories = [row[0] for row in rows]
         return jsonify(categories), 200
     except Exception:
-        app.logger.exception("Unable to retrieve categories")
+        logger.exception("category.list.failed")
         return jsonify({"error": "Unable to retrieve categories"}), 500
     finally:
         if cursor is not None:
