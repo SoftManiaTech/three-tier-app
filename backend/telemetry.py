@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Optional, Tuple
 
 from opentelemetry import trace, metrics
 from opentelemetry.sdk.resources import Resource, SERVICE_NAME, SERVICE_VERSION
@@ -22,6 +22,34 @@ _product_operations_counter = None
 _telemetry_initialized = False
 
 
+def get_current_trace_context() -> Tuple[str, str]:
+    """
+    Returns (trace_id, span_id) as hexadecimal strings for the currently active span.
+    If no active or valid span exists, returns empty strings or zeroes.
+    """
+    try:
+        span = trace.get_current_span()
+        if span:
+            ctx = span.get_span_context()
+            if ctx and ctx.is_valid:
+                return format(ctx.trace_id, "032x"), format(ctx.span_id, "016x")
+    except Exception:
+        pass
+    return "0" * 32, "0" * 16
+
+
+class TraceContextFilter(logging.Filter):
+    """
+    Logging filter that automatically attaches trace_id and span_id to every log record,
+    enabling automatic trace-to-log correlation in observability backends.
+    """
+    def filter(self, record: logging.LogRecord) -> bool:
+        trace_id, span_id = get_current_trace_context()
+        record.trace_id = trace_id
+        record.span_id = span_id
+        return True
+
+
 def init_telemetry(app) -> bool:
     """
     Initializes OpenTelemetry tracing and metrics with the OTLP HTTP exporter.
@@ -29,6 +57,11 @@ def init_telemetry(app) -> bool:
     Fails gracefully if the collector is unreachable or if telemetry is disabled.
     """
     global _meter, _product_operations_counter, _telemetry_initialized
+
+    # Attach trace context filter to app logger and root logger
+    context_filter = TraceContextFilter()
+    app.logger.addFilter(context_filter)
+    logging.getLogger("myapp.audit").addFilter(context_filter)
 
     if not TelemetryConfig.ENABLED:
         logger.info("OpenTelemetry is disabled via OTEL_ENABLED=false")

@@ -7,7 +7,7 @@ from flask_cors import CORS
 
 from db import get_connection
 from config import ServerConfig, ProductDomainLimits
-from telemetry import init_telemetry, record_product_operation
+from telemetry import init_telemetry, record_product_operation, get_current_trace_context
 
 app = Flask(__name__)
 CORS(app)
@@ -23,11 +23,14 @@ def start_request_timer():
 
 @app.after_request
 def log_request(response):
-    """Log one concise record for every HTTP request without logging its body."""
+    """Log one concise record for every HTTP request with trace and span IDs."""
     started_at = getattr(g, "request_started_at", None)
     duration_ms = (time.perf_counter() - started_at) * 1000 if started_at else 0
+    trace_id, span_id = get_current_trace_context()
     app.logger.info(
-        'request method=%s path=%s status=%s duration_ms=%.2f remote_addr=%s',
+        'request trace_id=%s span_id=%s method=%s path=%s status=%s duration_ms=%.2f remote_addr=%s',
+        trace_id,
+        span_id,
         request.method,
         request.path,
         response.status_code,
@@ -86,8 +89,9 @@ def get_products():
         products = [format_product(row) for row in rows]
         return jsonify(products), 200
     except Exception:
-        logger.exception("product.list.failed")
-        return jsonify({"error": "Unable to retrieve products"}), 500
+        trace_id, span_id = get_current_trace_context()
+        logger.exception("product.list.failed trace_id=%s span_id=%s", trace_id, span_id)
+        return jsonify({"error": "Unable to retrieve products", "trace_id": trace_id}), 500
     finally:
         if cursor is not None:
             cursor.close()
@@ -112,8 +116,9 @@ def get_product(id):
             return jsonify({"error": "Product not found"}), 404
         return jsonify(format_product(product)), 200
     except Exception:
-        logger.exception("product.read.failed product_id=%s", id)
-        return jsonify({"error": "Unable to retrieve product"}), 500
+        trace_id, span_id = get_current_trace_context()
+        logger.exception("product.read.failed product_id=%s trace_id=%s span_id=%s", id, trace_id, span_id)
+        return jsonify({"error": "Unable to retrieve product", "trace_id": trace_id}), 500
     finally:
         if cursor is not None:
             cursor.close()
@@ -176,7 +181,8 @@ def create_product():
         )
         conn.commit()
         product_id = cursor.lastrowid
-        logger.info("product.create.success product_id=%s", product_id)
+        trace_id, span_id = get_current_trace_context()
+        logger.info("product.create.success product_id=%s trace_id=%s span_id=%s", product_id, trace_id, span_id)
         record_product_operation("create", status="success")
 
         cursor.execute(
@@ -189,9 +195,10 @@ def create_product():
     except Exception:
         if conn is not None:
             conn.rollback()
-        logger.exception("product.create.failed")
+        trace_id, span_id = get_current_trace_context()
+        logger.exception("product.create.failed trace_id=%s span_id=%s", trace_id, span_id)
         record_product_operation("create", status="failure")
-        return jsonify({"error": "Unable to save product"}), 500
+        return jsonify({"error": "Unable to save product", "trace_id": trace_id}), 500
     finally:
         if cursor is not None:
             cursor.close()
@@ -268,7 +275,8 @@ def update_product(id):
             (name, description, category, price, id),
         )
         conn.commit()
-        logger.info("product.update.success product_id=%s", id)
+        trace_id, span_id = get_current_trace_context()
+        logger.info("product.update.success product_id=%s trace_id=%s span_id=%s", id, trace_id, span_id)
         record_product_operation("update", status="success")
 
         cursor.execute(
@@ -281,9 +289,10 @@ def update_product(id):
     except Exception:
         if conn is not None:
             conn.rollback()
-        logger.exception("product.update.failed product_id=%s", id)
+        trace_id, span_id = get_current_trace_context()
+        logger.exception("product.update.failed product_id=%s trace_id=%s span_id=%s", id, trace_id, span_id)
         record_product_operation("update", status="failure")
-        return jsonify({"error": "Unable to update product"}), 500
+        return jsonify({"error": "Unable to update product", "trace_id": trace_id}), 500
     finally:
         if cursor is not None:
             cursor.close()
@@ -302,15 +311,17 @@ def delete_product(id):
         if cursor.rowcount == 0:
             return jsonify({"error": "Product not found"}), 404
         conn.commit()
-        logger.info("product.delete.success product_id=%s", id)
+        trace_id, span_id = get_current_trace_context()
+        logger.info("product.delete.success product_id=%s trace_id=%s span_id=%s", id, trace_id, span_id)
         record_product_operation("delete", status="success")
-        return jsonify({"message": "Product deleted successfully", "id": id}), 200
+        return jsonify({"message": "Product deleted successfully", "id": id, "trace_id": trace_id}), 200
     except Exception:
         if conn is not None:
             conn.rollback()
-        logger.exception("product.delete.failed product_id=%s", id)
+        trace_id, span_id = get_current_trace_context()
+        logger.exception("product.delete.failed product_id=%s trace_id=%s span_id=%s", id, trace_id, span_id)
         record_product_operation("delete", status="failure")
-        return jsonify({"error": "Unable to delete product"}), 500
+        return jsonify({"error": "Unable to delete product", "trace_id": trace_id}), 500
     finally:
         if cursor is not None:
             cursor.close()
@@ -334,8 +345,9 @@ def get_categories():
         categories = [row[0] for row in rows]
         return jsonify(categories), 200
     except Exception:
-        logger.exception("category.list.failed")
-        return jsonify({"error": "Unable to retrieve categories"}), 500
+        trace_id, span_id = get_current_trace_context()
+        logger.exception("category.list.failed trace_id=%s span_id=%s", trace_id, span_id)
+        return jsonify({"error": "Unable to retrieve categories", "trace_id": trace_id}), 500
     finally:
         if cursor is not None:
             cursor.close()
