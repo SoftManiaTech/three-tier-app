@@ -101,6 +101,15 @@
       z-index: 1;
     }
 
+    .hero-badges-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
     .brand-badge {
       display: inline-flex;
       align-items: center;
@@ -114,7 +123,125 @@
       font-weight: 600;
       letter-spacing: 0.5px;
       text-transform: uppercase;
-      margin-bottom: 14px;
+      margin-bottom: 0;
+    }
+
+    .o11y-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(16, 185, 129, 0.18);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: var(--radius-badge);
+      font-size: 0.825rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 0;
+      color: #FFFFFF;
+      cursor: pointer;
+      transition: var(--transition);
+      user-select: none;
+    }
+
+    .o11y-pill:hover {
+      background: rgba(16, 185, 129, 0.28);
+      border-color: rgba(16, 185, 129, 0.6);
+      transform: translateY(-1px);
+    }
+
+    .o11y-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #10B981;
+      box-shadow: 0 0 8px #10B981;
+      animation: pulseDot 2s infinite;
+    }
+
+    @keyframes pulseDot {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1.15); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .o11y-trace-code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.75rem;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 2px 7px;
+      border-radius: 4px;
+      color: #A7F3D0;
+      letter-spacing: 0.5px;
+    }
+
+    .toast-content-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .toast-trace {
+      font-size: 0.75rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.06);
+      padding: 2px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      width: fit-content;
+      transition: var(--transition);
+    }
+
+    .toast-trace:hover {
+      background: rgba(0, 0, 0, 0.12);
+      color: var(--text-primary);
+    }
+
+    .toast-trace code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 600;
+    }
+
+    .o11y-empty-trace {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin: 14px 0 18px;
+      padding: 6px 14px;
+      background: var(--background);
+      border: 1px dashed var(--border-color);
+      border-radius: var(--radius-btn);
+      font-size: 0.85rem;
+    }
+
+    .o11y-empty-trace code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .btn-copy-trace {
+      background: none;
+      border: none;
+      color: var(--primary);
+      cursor: pointer;
+      font-size: 0.825rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: var(--transition);
+    }
+
+    .btn-copy-trace:hover {
+      background: var(--primary-light);
     }
 
     .hero-title {
@@ -1038,8 +1165,16 @@
        ========================================================== -->
   <header class="hero-header">
     <div class="hero-content">
-      <div class="brand-badge">
-        <i class='bx bx-cube-alt'></i> Inventory Dashboard
+      <div class="hero-badges-wrap">
+        <div class="brand-badge">
+          <i class='bx bx-cube-alt'></i> Inventory Dashboard
+        </div>
+        <div class="o11y-pill" id="o11yPill" onclick="copyActiveTrace()" title="Click to copy active OpenTelemetry Trace ID">
+          <span class="o11y-dot"></span>
+          <span>o11y: Active</span>
+          <span class="o11y-trace-code" id="o11yTraceDisplay">Init...</span>
+          <i class='bx bx-copy' style="font-size: 0.9rem; opacity: 0.85;"></i>
+        </div>
       </div>
       <h1 class="hero-title">
         <i class='bx bxs-box'></i> Product Manager
@@ -1253,7 +1388,8 @@
       searchQuery: '',
       editingProduct: null,
       deletingProduct: null,
-      isLoading: false
+      isLoading: false,
+      lastTraceId: null
     };
 
     /**
@@ -1369,9 +1505,9 @@
     }
 
     /**
-     * Toast Notifications (top-right, auto-dismiss after 3s)
+     * Toast Notifications (top-right, auto-dismiss after 3-4.5s)
      */
-    function showToast(message, type = 'info') {
+    function showToast(message, type = 'info', traceId = null) {
       const toast = document.createElement('div');
       toast.className = `toast ${type}`;
 
@@ -1380,9 +1516,19 @@
       if (type === 'error') iconClass = 'bx-error-circle';
       if (type === 'warning') iconClass = 'bx-error';
 
+      const activeTrace = traceId || (type === 'error' ? state.lastTraceId : null);
+      const traceSnippet = activeTrace ? `
+        <div class="toast-trace" onclick="copyTrace('${activeTrace}', event)" title="Click to copy Trace ID">
+          <span>Trace: <code>${activeTrace.slice(0, 6)}...${activeTrace.slice(-4)}</code></span>
+          <i class='bx bx-copy'></i>
+        </div>` : '';
+
       toast.innerHTML = `
         <i class='bx ${iconClass} toast-icon'></i>
-        <div class="toast-message">${escapeHtml(message)}</div>
+        <div class="toast-content-wrap">
+          <div class="toast-message">${escapeHtml(message)}</div>
+          ${traceSnippet}
+        </div>
         <button class="toast-close" type="button" aria-label="Dismiss toast">
           <i class='bx bx-x'></i>
         </button>
@@ -1402,7 +1548,7 @@
       };
 
       closeBtn.addEventListener('click', dismiss);
-      setTimeout(dismiss, 3000);
+      setTimeout(dismiss, activeTrace ? 4500 : 3000);
     }
 
     /**
@@ -1579,17 +1725,71 @@
     /* ==========================================================
        OpenTelemetry W3C Distributed Tracing & Observability Helper
        ========================================================== */
-    function generateTraceparent() {
+    function generateTraceContext() {
       // 16-byte random trace ID (32 hex chars) + 8-byte span ID (16 hex chars)
       const randHex = (bytes) => Array.from(crypto.getRandomValues(new Uint8Array(bytes)))
         .map(b => b.toString(16).padStart(2, '0')).join('');
-      return `00-${randHex(16)}-${randHex(8)}-01`;
+      const traceId = randHex(16);
+      const spanId = randHex(8);
+      return {
+        traceId,
+        spanId,
+        traceparent: `00-${traceId}-${spanId}-01`
+      };
+    }
+
+    function updateO11yBadge(traceId) {
+      const el = document.getElementById('o11yTraceDisplay');
+      if (el && traceId) {
+        el.textContent = `${traceId.slice(0, 6)}...${traceId.slice(-4)}`;
+        el.title = `Active Trace ID: ${traceId} (Click to copy)`;
+      }
+    }
+
+    function copyTrace(traceId, event) {
+      if (event) event.stopPropagation();
+      if (!traceId) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(traceId).then(() => {
+          showToast('Trace ID copied to clipboard!', 'info');
+        }).catch(() => fallbackCopy(traceId));
+      } else {
+        fallbackCopy(traceId);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast('Trace ID copied to clipboard!', 'info');
+      } catch (err) {
+        showToast('Unable to copy Trace ID automatically', 'warning');
+      }
+      document.body.removeChild(textarea);
+    }
+
+    function copyActiveTrace() {
+      if (state.lastTraceId) {
+        copyTrace(state.lastTraceId);
+      } else {
+        showToast('OpenTelemetry active. Make a request to generate a trace.', 'info');
+      }
     }
 
     async function apiFetch(url, options = {}) {
       const headers = new Headers(options.headers || {});
+      const ctx = generateTraceContext();
+      state.lastTraceId = ctx.traceId;
+      updateO11yBadge(ctx.traceId);
+
       if (!headers.has('traceparent')) {
-        headers.set('traceparent', generateTraceparent());
+        headers.set('traceparent', ctx.traceparent);
       }
       return fetch(url, { ...options, headers });
     }
@@ -1629,7 +1829,7 @@
         updateStats(state.products, state.categories);
       } catch (error) {
         console.error('Error fetching products:', error);
-        showToast(error.message || 'Error loading products from server', 'error');
+        showToast(error.message || 'Error loading products from server', 'error', state.lastTraceId);
         elements.productsGrid.innerHTML = `
           <div class="empty-state">
             <div class="empty-icon-wrap" style="color: var(--danger); background: rgba(239,68,68,0.1);">
@@ -1637,6 +1837,14 @@
             </div>
             <h3 class="empty-title">Failed to Load Products</h3>
             <p class="empty-text">${escapeHtml(error.message || 'Please check your connection or server status.')}</p>
+            ${state.lastTraceId ? `
+              <div class="o11y-empty-trace">
+                <span><i class='bx bx-radar'></i> Trace ID: <code>${state.lastTraceId}</code></span>
+                <button class="btn-copy-trace" type="button" onclick="copyTrace('${state.lastTraceId}')">
+                  <i class='bx bx-copy'></i> Copy
+                </button>
+              </div>
+            ` : ''}
             <button class="btn btn-primary" onclick="loadProducts()">
               <i class='bx bx-refresh'></i> Try Again
             </button>
@@ -1820,7 +2028,7 @@
         await loadCategories();
       } catch (error) {
         console.error('Error saving product:', error);
-        showToast(error.message || 'Failed to save product', 'error');
+        showToast(error.message || 'Failed to save product', 'error', state.lastTraceId);
       } finally {
         saveBtn.disabled = false;
         elements.saveBtnText.textContent = originalText;
@@ -1874,7 +2082,7 @@
         await loadCategories();
       } catch (error) {
         console.error('Error deleting product:', error);
-        showToast(error.message || 'Failed to delete product', 'error');
+        showToast(error.message || 'Failed to delete product', 'error', state.lastTraceId);
       } finally {
         confirmBtn.disabled = false;
         confirmBtn.innerHTML = "<i class='bx bx-trash'></i> Delete Product";
