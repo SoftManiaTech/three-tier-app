@@ -4,10 +4,15 @@ import logging
 from decimal import Decimal, InvalidOperation
 from flask import Flask, g, jsonify, request
 from flask_cors import CORS
+
 from db import get_connection
+from config import ServerConfig, ProductDomainLimits
+from telemetry import init_telemetry, record_product_operation
 
 app = Flask(__name__)
 CORS(app)
+init_telemetry(app)
+
 logger = logging.getLogger("myapp.audit")
 
 
@@ -126,17 +131,17 @@ def create_product():
     if not isinstance(name, str) or not name.strip():
         return jsonify({"error": "Product name is required"}), 400
     name = name.strip()
-    if len(name) > 100:
-        return jsonify({"error": "Name must be 100 characters or less"}), 400
+    if len(name) > ProductDomainLimits.MAX_NAME_LENGTH:
+        return jsonify({"error": f"Name must be {ProductDomainLimits.MAX_NAME_LENGTH} characters or less"}), 400
 
     raw_price = data.get("price")
     if raw_price is None or raw_price == "":
         return jsonify({"error": "Price is required"}), 400
     try:
         price = Decimal(str(raw_price))
-        if not price.is_finite() or price <= 0 or price > Decimal("99999999.99"):
+        if not price.is_finite() or price <= 0 or price > ProductDomainLimits.MAX_PRICE:
             raise InvalidOperation
-        price = price.quantize(Decimal("0.01"))
+        price = price.quantize(ProductDomainLimits.PRICE_DECIMAL_PLACES)
     except (InvalidOperation, ValueError, TypeError):
         return jsonify({"error": "Enter a valid positive price"}), 400
 
@@ -154,11 +159,11 @@ def create_product():
             return jsonify({"error": "Category must be a string"}), 400
         category = category.strip()
         if not category:
-            category = "General"
-        elif len(category) > 50:
-            return jsonify({"error": "Category must be 50 characters or less"}), 400
+            category = ProductDomainLimits.DEFAULT_CATEGORY
+        elif len(category) > ProductDomainLimits.MAX_CATEGORY_LENGTH:
+            return jsonify({"error": f"Category must be {ProductDomainLimits.MAX_CATEGORY_LENGTH} characters or less"}), 400
     else:
-        category = "General"
+        category = ProductDomainLimits.DEFAULT_CATEGORY
 
     conn = None
     cursor = None
@@ -172,6 +177,7 @@ def create_product():
         conn.commit()
         product_id = cursor.lastrowid
         logger.info("product.create.success product_id=%s", product_id)
+        record_product_operation("create", status="success")
 
         cursor.execute(
             "SELECT id, name, description, category, price, created_at, updated_at "
@@ -184,6 +190,7 @@ def create_product():
         if conn is not None:
             conn.rollback()
         logger.exception("product.create.failed")
+        record_product_operation("create", status="failure")
         return jsonify({"error": "Unable to save product"}), 500
     finally:
         if cursor is not None:
@@ -218,8 +225,8 @@ def update_product(id):
             if not isinstance(val, str) or not val.strip():
                 return jsonify({"error": "Product name cannot be empty"}), 400
             val = val.strip()
-            if len(val) > 100:
-                return jsonify({"error": "Name must be 100 characters or less"}), 400
+            if len(val) > ProductDomainLimits.MAX_NAME_LENGTH:
+                return jsonify({"error": f"Name must be {ProductDomainLimits.MAX_NAME_LENGTH} characters or less"}), 400
             name = val
 
         price = existing["price"]
@@ -229,9 +236,9 @@ def update_product(id):
                 return jsonify({"error": "Price cannot be empty"}), 400
             try:
                 val = Decimal(str(raw_price))
-                if not val.is_finite() or val <= 0 or val > Decimal("99999999.99"):
+                if not val.is_finite() or val <= 0 or val > ProductDomainLimits.MAX_PRICE:
                     raise InvalidOperation
-                price = val.quantize(Decimal("0.01"))
+                price = val.quantize(ProductDomainLimits.PRICE_DECIMAL_PLACES)
             except (InvalidOperation, ValueError, TypeError):
                 return jsonify({"error": "Enter a valid positive price"}), 400
 
@@ -249,11 +256,11 @@ def update_product(id):
                 return jsonify({"error": "Category must be a string"}), 400
             if isinstance(val, str):
                 val = val.strip()
-                category = val if val else "General"
+                category = val if val else ProductDomainLimits.DEFAULT_CATEGORY
             else:
-                category = "General"
-            if len(category) > 50:
-                return jsonify({"error": "Category must be 50 characters or less"}), 400
+                category = ProductDomainLimits.DEFAULT_CATEGORY
+            if len(category) > ProductDomainLimits.MAX_CATEGORY_LENGTH:
+                return jsonify({"error": f"Category must be {ProductDomainLimits.MAX_CATEGORY_LENGTH} characters or less"}), 400
 
         cursor.execute(
             "UPDATE products SET name = %s, description = %s, category = %s, price = %s "
@@ -262,6 +269,7 @@ def update_product(id):
         )
         conn.commit()
         logger.info("product.update.success product_id=%s", id)
+        record_product_operation("update", status="success")
 
         cursor.execute(
             "SELECT id, name, description, category, price, created_at, updated_at "
@@ -274,6 +282,7 @@ def update_product(id):
         if conn is not None:
             conn.rollback()
         logger.exception("product.update.failed product_id=%s", id)
+        record_product_operation("update", status="failure")
         return jsonify({"error": "Unable to update product"}), 500
     finally:
         if cursor is not None:
@@ -294,11 +303,13 @@ def delete_product(id):
             return jsonify({"error": "Product not found"}), 404
         conn.commit()
         logger.info("product.delete.success product_id=%s", id)
+        record_product_operation("delete", status="success")
         return jsonify({"message": "Product deleted successfully", "id": id}), 200
     except Exception:
         if conn is not None:
             conn.rollback()
         logger.exception("product.delete.failed product_id=%s", id)
+        record_product_operation("delete", status="failure")
         return jsonify({"error": "Unable to delete product"}), 500
     finally:
         if cursor is not None:
@@ -333,5 +344,4 @@ def get_categories():
 
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "5000"))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host=ServerConfig.HOST, port=ServerConfig.PORT, debug=ServerConfig.DEBUG)

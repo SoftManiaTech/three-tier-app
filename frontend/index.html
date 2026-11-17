@@ -1576,6 +1576,32 @@
       renderProducts(filtered);
     }
 
+    /* ==========================================================
+       OpenTelemetry W3C Distributed Tracing & Observability Helper
+       ========================================================== */
+    function generateTraceparent() {
+      // 16-byte random trace ID (32 hex chars) + 8-byte span ID (16 hex chars)
+      const randHex = (bytes) => Array.from(crypto.getRandomValues(new Uint8Array(bytes)))
+        .map(b => b.toString(16).padStart(2, '0')).join('');
+      return `00-${randHex(16)}-${randHex(8)}-01`;
+    }
+
+    async function apiFetch(url, options = {}) {
+      const headers = new Headers(options.headers || {});
+      if (!headers.has('traceparent')) {
+        headers.set('traceparent', generateTraceparent());
+      }
+      return fetch(url, { ...options, headers });
+    }
+
+    // Client-side unhandled exception tracking
+    window.addEventListener('error', (e) => {
+      console.warn('[o11y] Client runtime error:', e.message, e.filename, e.lineno);
+    });
+    window.addEventListener('unhandledrejection', (e) => {
+      console.warn('[o11y] Unhandled rejection:', e.reason);
+    });
+
     /**
      * Load Products from Backend API
      */
@@ -1590,7 +1616,7 @@
           url += `?category=${encodeURIComponent(activeCategory.trim())}`;
         }
 
-        const response = await fetch(url);
+        const response = await apiFetch(url);
         if (!response.ok) {
           throw new Error(`Failed to load products (HTTP ${response.status})`);
         }
@@ -1626,7 +1652,7 @@
      */
     async function loadCategories() {
       try {
-        const response = await fetch('/api/categories');
+        const response = await apiFetch('/api/categories');
         let categoryList = [];
 
         if (response.ok) {
@@ -1769,7 +1795,7 @@
       elements.saveBtnText.textContent = isEdit ? 'Updating...' : 'Saving...';
 
       try {
-        const response = await fetch(url, {
+        const response = await apiFetch(url, {
           method,
           headers: {
             'Content-Type': 'application/json',
@@ -1833,7 +1859,7 @@
       confirmBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Deleting...";
 
       try {
-        const response = await fetch(`/api/products/${id}`, {
+        const response = await apiFetch(`/api/products/${id}`, {
           method: 'DELETE'
         });
 
