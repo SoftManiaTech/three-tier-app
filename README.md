@@ -12,8 +12,9 @@ A three-server product catalog and inventory management application deployed on 
 - `frontend/` - Single-page web application with W3C distributed tracing
 - `backend/` - Flask REST API, central config, and OpenTelemetry instrumentation
 - `database/` - MySQL schema, seed data, and migration guidelines
-- `deploy/` - Deployment configurations and instructions for RHEL servers
-- `DECISIONS.md` - Architecture Decision Records (ADRs)
+- `deploy/` - Deployment, OpenTelemetry, and Splunk integration documentation
+  - [`deploy/SPLUNK_OBSERVABILITY_INTEGRATION.md`](deploy/SPLUNK_OBSERVABILITY_INTEGRATION.md) - Master Splunk Observability Cloud integration guide
+  - [`deploy/OTEL_COLLECTOR_UBUNTU_WSL.md`](deploy/OTEL_COLLECTOR_UBUNTU_WSL.md) - OpenTelemetry Collector setup for Ubuntu / WSL
 
 ---
 
