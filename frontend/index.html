@@ -1782,7 +1782,20 @@
       }
     }
 
+    // Automatic API base resolution:
+    // If the frontend is running on port 5000, use relative paths '/api/...'.
+    // If running separately (e.g. port 8080 via python -m http.server), target http://127.0.0.1:5000.
+    const API_BASE = (window.location.port === '5000' || window.location.protocol === 'file:')
+      ? (window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : '')
+      : 'http://127.0.0.1:5000';
+
+    function resolveApiUrl(url) {
+      if (url.startsWith('http://') || url.startsWith('https://')) return url;
+      return API_BASE ? `${API_BASE}${url.startsWith('/') ? '' : '/'}${url}` : url;
+    }
+
     async function apiFetch(url, options = {}) {
+      const fullUrl = resolveApiUrl(url);
       const headers = new Headers(options.headers || {});
       const ctx = generateTraceContext();
       state.lastTraceId = ctx.traceId;
@@ -1791,7 +1804,7 @@
       if (!headers.has('traceparent')) {
         headers.set('traceparent', ctx.traceparent);
       }
-      return fetch(url, { ...options, headers });
+      return fetch(fullUrl, { ...options, headers });
     }
 
     /**
@@ -1800,7 +1813,8 @@
     async function logClientEvent(level, message, details = {}) {
       try {
         const traceId = state.lastTraceId || generateRandomHex(16);
-        await fetch('/api/logs', {
+        const fullUrl = resolveApiUrl('/api/logs');
+        await fetch(fullUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
