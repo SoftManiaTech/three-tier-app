@@ -2,7 +2,7 @@ import os
 import time
 import logging
 from decimal import Decimal, InvalidOperation
-from flask import Flask, g, jsonify, request
+from flask import Flask, g, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 from db import get_connection
@@ -64,6 +64,22 @@ def format_product(product):
 @app.get("/api/health")
 def health():
     return jsonify({"status": "healthy", "service": "backend"}), 200
+
+
+FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+
+
+@app.get("/")
+def serve_index():
+    return send_from_directory(FRONTEND_DIR, "index.html")
+
+
+@app.get("/<path:path>")
+def serve_static(path):
+    file_path = os.path.join(FRONTEND_DIR, path)
+    if os.path.exists(file_path):
+        return send_from_directory(FRONTEND_DIR, path)
+    return jsonify({"error": "Not found"}), 404
 
 
 @app.post("/api/logs")

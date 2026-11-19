@@ -13,6 +13,8 @@ venv/
 
 # Local configuration
 config.local
+*.db
+.playwright-mcp/
 
 # Local notes and documentation
 DECISIONS.md
