@@ -1794,12 +1794,46 @@
       return fetch(url, { ...options, headers });
     }
 
+    /**
+     * Ship client-side logs to backend /api/logs for Splunk Observability ingestion.
+     */
+    async function logClientEvent(level, message, details = {}) {
+      try {
+        const traceId = state.lastTraceId || generateRandomHex(16);
+        await fetch('/api/logs', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            level: level || 'INFO',
+            message: message,
+            trace_id: traceId,
+            component: 'frontend-ui',
+            details: details
+          })
+        });
+      } catch (e) {
+        // Prevent log shipping errors from disrupting user experience
+        console.warn('[o11y] Failed shipping client log to /api/logs:', e);
+      }
+    }
+
     // Client-side unhandled exception tracking
     window.addEventListener('error', (e) => {
       console.warn('[o11y] Client runtime error:', e.message, e.filename, e.lineno);
+      logClientEvent('ERROR', `Client runtime error: ${e.message}`, {
+        filename: e.filename,
+        lineno: e.lineno,
+        colno: e.colno
+      });
     });
     window.addEventListener('unhandledrejection', (e) => {
       console.warn('[o11y] Unhandled rejection:', e.reason);
+      logClientEvent('ERROR', `Unhandled rejection: ${String(e.reason)}`, {
+        reason: String(e.reason)
+      });
     });
 
     /**
@@ -2022,12 +2056,18 @@
           isEdit ? `Product "${name}" updated successfully!` : `Product "${name}" added successfully!`,
           'success'
         );
+        logClientEvent('INFO', isEdit ? `Product "${name}" updated successfully` : `Product "${name}" added successfully`, {
+          id: result.id || id,
+          name: name,
+          category: category
+        });
 
         closeModal();
         await loadProducts();
         await loadCategories();
       } catch (error) {
         console.error('Error saving product:', error);
+        logClientEvent('ERROR', `Product save failed: ${error.message}`, { isEdit, error: error.message });
         showToast(error.message || 'Failed to save product', 'error', state.lastTraceId);
       } finally {
         saveBtn.disabled = false;
@@ -2077,11 +2117,13 @@
         }
 
         showToast(`Product "${name || 'Product'}" was deleted successfully.`, 'success');
+        logClientEvent('INFO', `Product "${name || 'Product'}" deleted successfully`, { id, name });
         closeDeleteModal();
         await loadProducts();
         await loadCategories();
       } catch (error) {
         console.error('Error deleting product:', error);
+        logClientEvent('ERROR', `Product delete failed: ${error.message}`, { id, error: error.message });
         showToast(error.message || 'Failed to delete product', 'error', state.lastTraceId);
       } finally {
         confirmBtn.disabled = false;
@@ -2127,6 +2169,7 @@
       // Category Filter change
       elements.categoryFilter.addEventListener('change', (e) => {
         state.selectedCategory = e.target.value;
+        logClientEvent('INFO', `Category filter changed to: ${state.selectedCategory || 'All'}`, { category: state.selectedCategory });
         loadProducts(state.selectedCategory);
       });
 

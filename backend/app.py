@@ -66,6 +66,31 @@ def health():
     return jsonify({"status": "healthy", "service": "backend"}), 200
 
 
+@app.post("/api/logs")
+def ingest_frontend_logs():
+    """
+    Ingest client-side frontend logs and forward them into the logging pipeline.
+    When OpenTelemetry is enabled, these logs are automatically exported to the
+    Splunk OpenTelemetry Collector along with their trace context.
+    """
+    data = request.get_json(silent=True) or {}
+    level = (data.get("level") or "info").upper()
+    message = data.get("message") or "Frontend event"
+    trace_id = data.get("trace_id") or "unknown"
+    component = data.get("component") or "frontend-ui"
+    details = data.get("details") or {}
+
+    frontend_logger = logging.getLogger("frontend.audit")
+    log_msg = f"[frontend] component={component} trace_id={trace_id} message={message} details={details}"
+    if level == "ERROR":
+        frontend_logger.error(log_msg)
+    elif level in ("WARN", "WARNING"):
+        frontend_logger.warning(log_msg)
+    else:
+        frontend_logger.info(log_msg)
+    return jsonify({"status": "received", "trace_id": trace_id}), 200
+
+
 @app.get("/api/products")
 def get_products():
     category = request.args.get("category")

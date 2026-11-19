@@ -12,14 +12,21 @@ from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExp
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.mysql import MySQLInstrumentor
 
+from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
+from opentelemetry._logs import set_logger_provider
+import opentelemetry._logs
+
 from config import TelemetryConfig
 
 logger = logging.getLogger("telemetry")
 
-# Global metrics references
+# Global references
 _meter = None
 _product_operations_counter = None
 _telemetry_initialized = False
+_logger_provider = None
 
 
 def get_current_trace_context() -> Tuple[str, str]:
@@ -41,7 +48,7 @@ def get_current_trace_context() -> Tuple[str, str]:
 class TraceContextFilter(logging.Filter):
     """
     Logging filter that automatically attaches trace_id and span_id to every log record,
-    enabling automatic trace-to-log correlation in observability backends.
+    enabling automatic trace-to-log correlation in Splunk and observability backends.
     """
     def filter(self, record: logging.LogRecord) -> bool:
         trace_id, span_id = get_current_trace_context()
@@ -52,16 +59,16 @@ class TraceContextFilter(logging.Filter):
 
 def init_telemetry(app) -> bool:
     """
-    Initializes OpenTelemetry tracing and metrics with the OTLP HTTP exporter.
-    Instruments the Flask app and MySQL client.
-    Fails gracefully if the collector is unreachable or if telemetry is disabled.
+    Initializes OpenTelemetry tracing, metrics, and logs with the OTLP HTTP exporter.
+    Instruments Flask, MySQL, and ships application logs to the Splunk OTel Collector.
     """
-    global _meter, _product_operations_counter, _telemetry_initialized
+    global _meter, _product_operations_counter, _telemetry_initialized, _logger_provider
 
-    # Attach trace context filter to app logger and root logger
+    # Attach trace context filter to app loggers
     context_filter = TraceContextFilter()
     app.logger.addFilter(context_filter)
     logging.getLogger("myapp.audit").addFilter(context_filter)
+    logging.getLogger("frontend.audit").addFilter(context_filter)
 
     if not TelemetryConfig.ENABLED:
         logger.info("OpenTelemetry is disabled via OTEL_ENABLED=false")
@@ -81,14 +88,14 @@ def init_telemetry(app) -> bool:
             }
         )
 
-        # 2. Setup Tracing
+        # 2. Setup Tracing (OTLP -> Collector /v1/traces)
         trace_endpoint = f"{TelemetryConfig.OTLP_ENDPOINT.rstrip('/')}/v1/traces"
         span_exporter = OTLPSpanExporter(endpoint=trace_endpoint)
         tracer_provider = TracerProvider(resource=resource)
         tracer_provider.add_span_processor(BatchSpanProcessor(span_exporter))
         trace.set_tracer_provider(tracer_provider)
 
-        # 3. Setup Metrics
+        # 3. Setup Metrics (OTLP -> Collector /v1/metrics)
         try:
             metric_endpoint = f"{TelemetryConfig.OTLP_ENDPOINT.rstrip('/')}/v1/metrics"
             metric_exporter = OTLPMetricExporter(endpoint=metric_endpoint)
@@ -112,12 +119,30 @@ def init_telemetry(app) -> bool:
                 metric_err,
             )
 
-        # 4. Instrument Flask application
+        # 4. Setup Logging (OTLP -> Splunk OTel Collector /v1/logs)
+        try:
+            log_endpoint = f"{TelemetryConfig.OTLP_ENDPOINT.rstrip('/')}/v1/logs"
+            log_exporter = OTLPLogExporter(endpoint=log_endpoint)
+            _logger_provider = LoggerProvider(resource=resource)
+            _logger_provider.add_log_record_processor(BatchLogRecordProcessor(log_exporter))
+            set_logger_provider(_logger_provider)
+
+            # Attach OTLP handler to ship application logs to Splunk OTel Collector
+            otlp_handler = LoggingHandler(level=logging.INFO, logger_provider=_logger_provider)
+            otlp_handler.addFilter(context_filter)
+            app.logger.addHandler(otlp_handler)
+            logging.getLogger("myapp.audit").addHandler(otlp_handler)
+            logging.getLogger("frontend.audit").addHandler(otlp_handler)
+            logger.info("OTel logging handler attached for Splunk export to %s", log_endpoint)
+        except Exception as log_err:
+            logger.warning("OTel logging initialization note: %s", log_err)
+
+        # 5. Instrument Flask application
         FlaskInstrumentor().instrument_app(
             app, excluded_urls=TelemetryConfig.EXCLUDED_URLS
         )
 
-        # 5. Instrument MySQL driver
+        # 6. Instrument MySQL driver
         try:
             MySQLInstrumentor().instrument()
         except Exception as db_inst_err:
@@ -144,7 +169,6 @@ def record_product_operation(operation: str, status: str = "success") -> None:
     Safe to call even if telemetry is disabled or uninitialized.
     """
     try:
-        # Annotate current active span with business event
         current_span = trace.get_current_span()
         if current_span and current_span.is_recording():
             current_span.add_event(
@@ -152,13 +176,27 @@ def record_product_operation(operation: str, status: str = "success") -> None:
                 {"operation": operation, "status": status},
             )
 
-        # Increment metric counter
         if _product_operations_counter is not None:
             _product_operations_counter.add(
                 1, {"operation": operation, "status": status}
             )
     except Exception as err:
         logger.debug("Failed recording product operation metric: %s", err)
+
+
+def flush_telemetry():
+    """Forces flushing of traces, metrics, and logs."""
+    try:
+        tracer_provider = trace.get_tracer_provider()
+        if hasattr(tracer_provider, "force_flush"):
+            tracer_provider.force_flush()
+        meter_provider = metrics.get_meter_provider()
+        if hasattr(meter_provider, "force_flush"):
+            meter_provider.force_flush()
+        if _logger_provider and hasattr(_logger_provider, "force_flush"):
+            _logger_provider.force_flush()
+    except Exception:
+        pass
 
 
 def get_tracer():
