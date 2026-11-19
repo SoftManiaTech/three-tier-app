@@ -200,3 +200,71 @@ Attributes:
   -> http.status_code: 200
 ```
 This confirms that data is arriving end-to-end!
+
+---
+
+## 7. Splunk Observability Cloud Configuration
+
+When forwarding telemetry from the OpenTelemetry Collector directly to **Splunk Observability Cloud**, the following details are required:
+
+| Parameter | Description | Example Value |
+|---|---|---|
+| `SPLUNK_REALM` | The Splunk region/realm hosting your account | `au0`, `us0`, `us1`, `eu0` |
+| `SPLUNK_HEC_TOKEN` | HTTP Event Collector token for log ingestion | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
+| `SPLUNK_ACCESS_TOKEN` | Splunk Observability Org Access token for traces/metrics | `xxxxxxxxxxxxxxxxxxxxxx` |
+| `SPLUNK_HEC_URL` | HEC log ingestion endpoint URL | `https://ingest.<SPLUNK_REALM>.observability.splunkcloud.com/v1/log` |
+
+### Production Splunk `config.yaml` (WSL / Ubuntu)
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 75
+    spike_limit_percentage: 20
+  batch:
+    timeout: 1s
+    send_batch_size: 64
+  resourcedetection:
+    detectors: [system]
+
+exporters:
+  # 1. Logs exporter to Splunk Observability Cloud
+  splunk_hec:
+    token: "${SPLUNK_HEC_TOKEN}"
+    endpoint: "https://ingest.${SPLUNK_REALM}.observability.splunkcloud.com/v1/log"
+    source: "otel"
+    sourcetype: "otel"
+    profiling_data_enabled: false
+
+  # 2. Traces exporter to Splunk Observability Cloud
+  otlp_http/splunk:
+    endpoint: "https://ingest.${SPLUNK_REALM}.observability.splunkcloud.com/v2/trace/otlp"
+    headers:
+      "X-SF-Token": "${SPLUNK_ACCESS_TOKEN}"
+
+  # 3. Optional local debug output in terminal
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resourcedetection]
+      exporters: [otlp_http/splunk, debug]
+
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resourcedetection]
+      exporters: [splunk_hec, debug]
+```
+
