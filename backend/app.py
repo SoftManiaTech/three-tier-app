@@ -112,10 +112,18 @@ def get_products():
             )
         rows = cursor.fetchall()
         products = [format_product(row) for row in rows]
+        trace_id, span_id = get_current_trace_context()
+        logger.info(
+            "db.query.products_success count=%d category=%s trace_id=%s span_id=%s",
+            len(products),
+            category.strip() if category else "ALL",
+            trace_id,
+            span_id,
+        )
         return jsonify(products), 200
     except Exception:
         trace_id, span_id = get_current_trace_context()
-        logger.exception("product.list.failed trace_id=%s span_id=%s", trace_id, span_id)
+        logger.exception("db.query.products_failed trace_id=%s span_id=%s", trace_id, span_id)
         return jsonify({"error": "Unable to retrieve products", "trace_id": trace_id}), 500
     finally:
         if cursor is not None:
@@ -137,12 +145,15 @@ def get_product(id):
             (id,),
         )
         product = cursor.fetchone()
+        trace_id, span_id = get_current_trace_context()
         if product is None:
+            logger.warning("db.query.product_not_found product_id=%s trace_id=%s span_id=%s", id, trace_id, span_id)
             return jsonify({"error": "Product not found"}), 404
+        logger.info("db.query.product_found product_id=%s trace_id=%s span_id=%s", id, trace_id, span_id)
         return jsonify(format_product(product)), 200
     except Exception:
         trace_id, span_id = get_current_trace_context()
-        logger.exception("product.read.failed product_id=%s trace_id=%s span_id=%s", id, trace_id, span_id)
+        logger.exception("db.query.product_failed product_id=%s trace_id=%s span_id=%s", id, trace_id, span_id)
         return jsonify({"error": "Unable to retrieve product", "trace_id": trace_id}), 500
     finally:
         if cursor is not None:
@@ -368,10 +379,12 @@ def get_categories():
         )
         rows = cursor.fetchall()
         categories = [row[0] for row in rows]
+        trace_id, span_id = get_current_trace_context()
+        logger.info("db.query.categories_success count=%d trace_id=%s span_id=%s", len(categories), trace_id, span_id)
         return jsonify(categories), 200
     except Exception:
         trace_id, span_id = get_current_trace_context()
-        logger.exception("category.list.failed trace_id=%s span_id=%s", trace_id, span_id)
+        logger.exception("db.query.categories_failed trace_id=%s span_id=%s", trace_id, span_id)
         return jsonify({"error": "Unable to retrieve categories", "trace_id": trace_id}), 500
     finally:
         if cursor is not None:
