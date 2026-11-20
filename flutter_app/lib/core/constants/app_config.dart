@@ -2,6 +2,9 @@
 class AppConfig {
   static const String appName = 'Product Manager';
   static const String appTagline = 'Inventory & Catalog Management';
+  static const String brandName = 'SoftMania Learning';
+  static const String organizationName = 'SoftManiaTech';
+  static const String githubRepoUrl = 'https://github.com/SoftManiaTech/three-tier-app.git';
 
   // Default Backend URL fallbacks
   static const String defaultBackendUrl = 'http://localhost:5000';

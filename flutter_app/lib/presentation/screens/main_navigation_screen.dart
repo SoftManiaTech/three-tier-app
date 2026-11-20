@@ -59,6 +59,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             elevation: 0.5,
             title: Row(
               children: [
+                // SoftMania Learning Icon in Header
                 Container(
                   width: 32,
                   height: 32,
@@ -66,7 +67,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     color: AppColors.primaryLight,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.inventory_2, color: AppColors.primary, size: 18),
+                  child: const Tooltip(
+                    message: 'SoftMania Learning',
+                    child: Icon(Icons.school_rounded, color: AppColors.primary, size: 18),
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Flexible(
@@ -122,7 +126,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 4),
+
+              // SoftMania Learning Icon
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 6),
+                child: Tooltip(
+                  message: 'SoftMania Learning',
+                  child: Icon(Icons.school_rounded, color: AppColors.primary, size: 20),
+                ),
+              ),
 
               // Refresh Button
               IconButton(

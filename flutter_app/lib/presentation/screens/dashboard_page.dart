@@ -83,10 +83,10 @@ class DashboardPage extends StatelessWidget {
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.inventory, color: Colors.white, size: 14),
+                    Icon(Icons.school, color: Colors.white, size: 14),
                     SizedBox(width: 6),
                     Text(
-                      '3-TIER ARCHITECTURE',
+                      'SOFTMANIA LEARNING',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 11,
