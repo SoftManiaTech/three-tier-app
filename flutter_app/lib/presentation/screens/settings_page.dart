@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../data/datasources/splunk_rum_service.dart';
 import '../controllers/product_controller.dart';
 import '../controllers/settings_controller.dart';
 
@@ -13,24 +14,34 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   late TextEditingController _urlController;
+  late TextEditingController _appNameController;
+  late TextEditingController _environmentController;
+  late TextEditingController _versionController;
+  late TextEditingController _realmController;
+  late TextEditingController _tokenController;
 
-  final List<String> _presets = [
-    'http://localhost:5000',
-    'http://localhost:8000',
-    'http://10.0.2.2:5000',
-    'http://127.0.0.1:3000',
-  ];
+  bool _isEditingSplunk = false;
 
   @override
   void initState() {
     super.initState();
-    final current = context.read<SettingsController>().backendUrl;
-    _urlController = TextEditingController(text: current);
+    final settings = context.read<SettingsController>();
+    _urlController = TextEditingController(text: settings.backendUrl);
+    _appNameController = TextEditingController(text: settings.splunkAppName);
+    _environmentController = TextEditingController(text: settings.splunkEnvironment);
+    _versionController = TextEditingController(text: settings.splunkAppVersion);
+    _realmController = TextEditingController(text: settings.splunkRealm);
+    _tokenController = TextEditingController(text: settings.splunkRumToken);
   }
 
   @override
   void dispose() {
     _urlController.dispose();
+    _appNameController.dispose();
+    _environmentController.dispose();
+    _versionController.dispose();
+    _realmController.dispose();
+    _tokenController.dispose();
     super.dispose();
   }
 
@@ -41,6 +52,13 @@ class _SettingsPageState extends State<SettingsPage> {
     // Keep controller in sync if settings loaded asynchronously
     if (_urlController.text.isEmpty && settings.backendUrl.isNotEmpty) {
       _urlController.text = settings.backendUrl;
+    }
+    if (_appNameController.text.isEmpty && settings.splunkAppName.isNotEmpty) {
+      _appNameController.text = settings.splunkAppName;
+      _environmentController.text = settings.splunkEnvironment;
+      _versionController.text = settings.splunkAppVersion;
+      _realmController.text = settings.splunkRealm;
+      _tokenController.text = settings.splunkRumToken;
     }
 
     return Scaffold(
@@ -125,7 +143,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Quick Preset Chips
+                      // Quick Preset Chips (SSOT)
                       const Text(
                         'Quick Presets:',
                         style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
@@ -134,7 +152,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: _presets.map((preset) {
+                        children: settings.presets.map((preset) {
                           final isCurrent = _urlController.text.trim() == preset;
                           return ChoiceChip(
                             label: Text(preset, style: const TextStyle(fontSize: 11.5)),
@@ -255,6 +273,201 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 const SizedBox(height: 28),
 
+                // Splunk Observability Cloud RUM Card (Dynamic & Editable)
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.borderColor),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color.fromRGBO(0, 0, 0, 0.04),
+                        blurRadius: 10,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.radar, color: Color(0xFFE11D48), size: 22),
+                              SizedBox(width: 8),
+                              Text(
+                                'Splunk RUM (Real User Monitoring)',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF1F2),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: const Color(0xFFFECDD3)),
+                            ),
+                            child: Text(
+                              'Realm: ${settings.splunkRealm}',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFBE123C),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Real-time client telemetry streaming directly to Splunk Observability Cloud. Monitors page renders, UI interactions, and API latency.',
+                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 14),
+
+                      if (_isEditingSplunk) ...[
+                        // Editable Form Fields
+                        _buildInputField('Application Name', _appNameController, 'e.g. three-tier-product-frontend'),
+                        const SizedBox(height: 10),
+                        _buildInputField('Deployment Environment', _environmentController, 'e.g. production, dev'),
+                        const SizedBox(height: 10),
+                        _buildInputField('Application Version', _versionController, 'e.g. 1.0.0'),
+                        const SizedBox(height: 10),
+                        _buildInputField('Splunk Realm', _realmController, 'e.g. au0'),
+                        const SizedBox(height: 10),
+                        _buildInputField('RUM Access Token', _tokenController, 'e.g. Vzad6YH5sdprluV2gjLGPw', obscure: true),
+                        const SizedBox(height: 14),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _isEditingSplunk = false;
+                                  _appNameController.text = settings.splunkAppName;
+                                  _environmentController.text = settings.splunkEnvironment;
+                                  _versionController.text = settings.splunkAppVersion;
+                                  _realmController.text = settings.splunkRealm;
+                                  _tokenController.text = settings.splunkRumToken;
+                                });
+                              },
+                              child: const Text('Cancel'),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                final messenger = ScaffoldMessenger.of(context);
+                                final ok = await settings.saveSplunkConfig(
+                                  realm: _realmController.text,
+                                  token: _tokenController.text,
+                                  appName: _appNameController.text,
+                                  environment: _environmentController.text,
+                                  appVersion: _versionController.text,
+                                );
+                                if (mounted && ok) {
+                                  setState(() {
+                                    _isEditingSplunk = false;
+                                  });
+                                  messenger.showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Splunk RUM configuration updated!'),
+                                      backgroundColor: AppColors.success,
+                                    ),
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.check, size: 16),
+                              label: const Text('Save Telemetry Config'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFE11D48),
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ] else ...[
+                        // Dynamic Display Container
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.borderColor),
+                          ),
+                          child: Column(
+                            children: [
+                              _buildRumDetailRow('Application Name', settings.splunkAppName),
+                              const Divider(height: 14),
+                              _buildRumDetailRow('Environment', settings.splunkEnvironment),
+                              const Divider(height: 14),
+                              _buildRumDetailRow('App Version', settings.splunkAppVersion),
+                              const Divider(height: 14),
+                              _buildRumDetailRow('Splunk Realm', settings.splunkRealm),
+                              const Divider(height: 14),
+                              _buildRumDetailRow(
+                                'RUM Access Token',
+                                settings.splunkRumToken.length > 8
+                                    ? '${settings.splunkRumToken.substring(0, 6)}... (Active)'
+                                    : 'Configured',
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _isEditingSplunk = true;
+                                });
+                              },
+                              icon: const Icon(Icons.edit_outlined, size: 16),
+                              label: const Text('Edit Telemetry Config'),
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                final messenger = ScaffoldMessenger.of(context);
+                                final productCtrl = context.read<ProductController>();
+                                await SplunkRumService.generateSampleActivity(
+                                  stats: productCtrl.stats,
+                                  products: productCtrl.products,
+                                  backendUrl: settings.backendUrl,
+                                );
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Dispatched live dynamic telemetry events to Splunk RUM!'),
+                                    backgroundColor: Color(0xFFE11D48),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.bolt, size: 18),
+                              label: const Text('Generate RUM Activity'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFE11D48),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 28),
+
                 // Educational Architecture Guide Card
                 Container(
                   padding: const EdgeInsets.all(20),
@@ -306,6 +519,53 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildInputField(String label, TextEditingController controller, String hint, {bool obscure = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+        ),
+        const SizedBox(height: 4),
+        TextField(
+          controller: controller,
+          obscureText: obscure,
+          decoration: InputDecoration(
+            hintText: hint,
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.borderColor),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRumDetailRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+        ),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 

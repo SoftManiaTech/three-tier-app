@@ -7,4 +7,16 @@ abstract class SettingsRepository {
 
   /// Tests connectivity to a given backend base URL
   Future<bool> testConnection(String url);
+
+  /// Retrieves dynamic Splunk RUM configuration map
+  Future<Map<String, String>> getSplunkConfig();
+
+  /// Saves dynamic Splunk RUM configuration parameters
+  Future<void> saveSplunkConfig({
+    required String realm,
+    required String token,
+    required String appName,
+    required String environment,
+    required String appVersion,
+  });
 }

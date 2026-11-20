@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../core/errors/exceptions.dart';
+import '../../data/datasources/splunk_rum_service.dart';
 import '../../domain/models/dashboard_stats.dart';
 import '../../domain/models/product.dart';
 import '../../domain/repositories/product_repository.dart';
@@ -73,6 +74,8 @@ class ProductController extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
+    SplunkRumService.trackCustomEvent('category_filter_selected', {'category': _selectedCategory});
+
     try {
       final liveProducts = await repository.getProducts(
         category: _selectedCategory.isNotEmpty ? _selectedCategory : null,
@@ -141,6 +144,11 @@ class ProductController extends ChangeNotifier {
     try {
       final created = await repository.createProduct(product);
       _products.insert(0, created);
+      SplunkRumService.trackCustomEvent('product_created', {
+        'name': created.name,
+        'category': created.category,
+        'price': created.price,
+      });
       if (!_categories.contains(created.category) && created.category.isNotEmpty) {
         _categories.add(created.category);
         _categories.sort();
@@ -176,6 +184,11 @@ class ProductController extends ChangeNotifier {
       } else {
         _products.insert(0, updated);
       }
+      SplunkRumService.trackCustomEvent('product_updated', {
+        'id': updated.id,
+        'name': updated.name,
+        'price': updated.price,
+      });
       if (!_categories.contains(updated.category) && updated.category.isNotEmpty) {
         _categories.add(updated.category);
         _categories.sort();
@@ -203,6 +216,7 @@ class ProductController extends ChangeNotifier {
     try {
       await repository.deleteProduct(id);
       _products.removeWhere((p) => p.id == id);
+      SplunkRumService.trackCustomEvent('product_deleted', {'id': id});
       _applyFilters();
       notifyListeners();
       return true;

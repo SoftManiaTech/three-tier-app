@@ -26,4 +26,36 @@ class SettingsRepositoryImpl implements SettingsRepository {
   Future<bool> testConnection(String url) {
     return _apiService.ping(url);
   }
+
+  @override
+  Future<Map<String, String>> getSplunkConfig() async {
+    final realm = await _localStorage.getSplunkRealm();
+    final token = await _localStorage.getSplunkRumToken();
+    final appName = await _localStorage.getSplunkAppName();
+    final environment = await _localStorage.getSplunkEnvironment();
+    final appVersion = await _localStorage.getSplunkAppVersion();
+
+    return {
+      'realm': realm,
+      'token': token,
+      'appName': appName,
+      'environment': environment,
+      'appVersion': appVersion,
+    };
+  }
+
+  @override
+  Future<void> saveSplunkConfig({
+    required String realm,
+    required String token,
+    required String appName,
+    required String environment,
+    required String appVersion,
+  }) async {
+    await _localStorage.saveSplunkRealm(realm);
+    await _localStorage.saveSplunkRumToken(token);
+    await _localStorage.saveSplunkAppName(appName);
+    await _localStorage.saveSplunkEnvironment(environment);
+    await _localStorage.saveSplunkAppVersion(appVersion);
+  }
 }

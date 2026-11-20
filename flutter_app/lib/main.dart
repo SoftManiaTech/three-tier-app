@@ -4,6 +4,7 @@ import 'core/constants/app_colors.dart';
 import 'core/constants/app_config.dart';
 import 'data/datasources/product_api_service.dart';
 import 'data/datasources/settings_local_storage.dart';
+import 'data/datasources/splunk_rum_service.dart';
 import 'data/repositories/product_repository_impl.dart';
 import 'data/repositories/settings_repository_impl.dart';
 import 'domain/repositories/product_repository.dart';
@@ -29,11 +30,26 @@ void main() async {
     settingsRepository: settingsRepo,
   );
 
+  // Dynamic Splunk Observability Cloud parameters from persistent storage (or SSOT defaults)
+  final splunkRealm = await localStorage.getSplunkRealm();
+  final splunkToken = await localStorage.getSplunkRumToken();
+  final splunkAppName = await localStorage.getSplunkAppName();
+  final splunkEnvironment = await localStorage.getSplunkEnvironment();
+  final splunkVersion = await localStorage.getSplunkAppVersion();
+
+  // Initialize Splunk RUM dynamically with the exact requested configuration
+  await SplunkRumService.initialize(
+    realm: splunkRealm,
+    token: splunkToken,
+    appName: splunkAppName,
+    environment: splunkEnvironment,
+    appVersion: splunkVersion,
+  );
+
   // Tier 1: Presentation Tier controllers
   final settingsController = SettingsController(repository: settingsRepo);
   final productController = ProductController(repository: productRepo);
 
-  // Initialize stored settings and fetch products
   await settingsController.init();
   productController.loadData();
 
