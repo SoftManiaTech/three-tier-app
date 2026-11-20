@@ -7,7 +7,7 @@ from flask_cors import CORS
 
 from db import get_connection
 from config import ServerConfig, ProductDomainLimits
-from telemetry import init_telemetry, record_product_operation, get_current_trace_context
+from telemetry import init_telemetry, record_product_operation, get_current_trace_context, get_tracer
 
 app = Flask(__name__)
 CORS(app)
@@ -88,6 +88,8 @@ def ingest_frontend_logs():
     Ingest client-side frontend logs and forward them into the logging pipeline.
     When OpenTelemetry is enabled, these logs are automatically exported to the
     Splunk OpenTelemetry Collector along with their trace context.
+    For page_view events, generates an APM span so frontend navigation appears
+    as distinct business transactions in Splunk APM.
     """
     data = request.get_json(silent=True) or {}
     level = (data.get("level") or "info").upper()
@@ -96,14 +98,37 @@ def ingest_frontend_logs():
     component = data.get("component") or "frontend-ui"
     details = data.get("details") or {}
 
+    event_type = details.get("event_type") or data.get("event_type")
+    page_route = details.get("page_route") or data.get("page_route")
+
     frontend_logger = logging.getLogger("frontend.audit")
     log_msg = f"[frontend] component={component} trace_id={trace_id} message={message} details={details}"
-    if level == "ERROR":
-        frontend_logger.error(log_msg)
-    elif level in ("WARN", "WARNING"):
-        frontend_logger.warning(log_msg)
+
+    if event_type == "page_view" and page_route:
+        try:
+            tracer = get_tracer()
+            with tracer.start_as_current_span(f"frontend:PAGE {page_route}") as span:
+                span.set_attribute("page.route", page_route)
+                span.set_attribute("client.trace_id", trace_id)
+                span.set_attribute("component", component)
+                if "previous_page" in details:
+                    span.set_attribute("page.previous", details["previous_page"])
+                if level == "ERROR":
+                    frontend_logger.error(log_msg)
+                elif level in ("WARN", "WARNING"):
+                    frontend_logger.warning(log_msg)
+                else:
+                    frontend_logger.info(log_msg)
+        except Exception:
+            frontend_logger.info(log_msg)
     else:
-        frontend_logger.info(log_msg)
+        if level == "ERROR":
+            frontend_logger.error(log_msg)
+        elif level in ("WARN", "WARNING"):
+            frontend_logger.warning(log_msg)
+        else:
+            frontend_logger.info(log_msg)
+
     return jsonify({"status": "received", "trace_id": trace_id}), 200
 
 

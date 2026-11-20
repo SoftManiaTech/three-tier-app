@@ -1156,6 +1156,180 @@
         width: 100%;
       }
     }
+
+    /* ==========================================================
+       Multi-Page Navigation & Views
+       ========================================================== */
+    .app-navigation {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      padding: 8px 12px;
+      background: var(--card-bg);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--border-color);
+    }
+
+    .nav-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border: none;
+      background: transparent;
+      border-radius: var(--radius-btn);
+      font-size: 0.925rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: var(--transition);
+      user-select: none;
+    }
+
+    .nav-tab:hover {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .nav-tab.active {
+      background: var(--primary);
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
+    }
+
+    .nav-tab i {
+      font-size: 1.15rem;
+    }
+
+    .page-view {
+      animation: fadeInView 0.25s ease-in-out;
+    }
+
+    @keyframes fadeInView {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Dedicated Card Styles */
+    .page-card {
+      background: var(--card-bg);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--border-color);
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+
+    .page-card-header {
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .page-card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .page-card-subtitle {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* Analytics Styles */
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .category-bar-row {
+      margin-bottom: 14px;
+    }
+
+    .category-bar-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-primary);
+    }
+
+    .category-progress-bg {
+      height: 10px;
+      background: #E5E7EB;
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+
+    .category-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #6C63FF, #FF6584);
+      border-radius: 9999px;
+      transition: width 0.5s ease;
+    }
+
+    /* Telemetry Console Styles */
+    .telemetry-log-table-wrap {
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .telemetry-log-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.825rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .telemetry-log-table th {
+      text-align: left;
+      padding: 10px 12px;
+      background: #F9FAFB;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    .telemetry-log-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-primary);
+      vertical-align: middle;
+    }
+
+    .badge-level {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.725rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-level.info { background: rgba(16, 185, 129, 0.15); color: #059669; }
+    .badge-level.warn { background: rgba(245, 158, 11, 0.15); color: #D97706; }
+    .badge-level.error { background: rgba(239, 68, 68, 0.15); color: #DC2626; }
+
+    .trace-pill-code {
+      background: #F3F4F6;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 0.775rem;
+      color: #4B5563;
+      border: 1px solid #E5E7EB;
+    }
   </style>
 </head>
 <body>
@@ -1190,71 +1364,221 @@
        ========================================================== -->
   <main class="app-container">
 
-    <!-- Stats Bar -->
-    <section class="stats-bar" aria-label="Catalog Summary Statistics">
-      <div class="stat-card">
-        <div class="stat-icon products">
-          <i class='bx bx-package'></i>
+    <!-- Top Multi-Page Navigation Bar -->
+    <nav class="app-navigation" aria-label="Page Navigation">
+      <button class="nav-tab active" data-page="products" onclick="navigateTo('products')">
+        <i class='bx bx-grid-alt'></i>
+        <span>Catalog</span>
+      </button>
+      <button class="nav-tab" data-page="add-product" onclick="navigateTo('add-product')">
+        <i class='bx bx-plus-circle'></i>
+        <span>Add Product Page</span>
+      </button>
+      <button class="nav-tab" data-page="analytics" onclick="navigateTo('analytics')">
+        <i class='bx bx-bar-chart-alt-2'></i>
+        <span>Analytics Dashboard</span>
+      </button>
+      <button class="nav-tab" data-page="telemetry" onclick="navigateTo('telemetry')">
+        <i class='bx bx-radar'></i>
+        <span>Live Telemetry & Logs</span>
+      </button>
+    </nav>
+
+    <!-- PAGE VIEW 1: PRODUCTS CATALOG -->
+    <div id="view-products" class="page-view active">
+      <!-- Stats Bar -->
+      <section class="stats-bar" aria-label="Catalog Summary Statistics">
+        <div class="stat-card">
+          <div class="stat-icon products">
+            <i class='bx bx-package'></i>
+          </div>
+          <div class="stat-details">
+            <span class="stat-value" id="statTotalProducts">0</span>
+            <span class="stat-label">Total Products</span>
+          </div>
         </div>
-        <div class="stat-details">
-          <span class="stat-value" id="statTotalProducts">0</span>
-          <span class="stat-label">Total Products</span>
+
+        <div class="stat-card">
+          <div class="stat-icon categories">
+            <i class='bx bx-category-alt'></i>
+          </div>
+          <div class="stat-details">
+            <span class="stat-value" id="statTotalCategories">0</span>
+            <span class="stat-label">Active Categories</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon inventory">
+            <i class='bx bx-wallet'></i>
+          </div>
+          <div class="stat-details">
+            <span class="stat-value" id="statCatalogValue">₹0.00</span>
+            <span class="stat-label">Total Inventory Value</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Controls Bar: Category Filter, Search, Refresh, Add Button -->
+      <section class="controls-bar">
+        <div class="controls-left">
+          <!-- Search Input -->
+          <div class="search-box">
+            <i class='bx bx-search'></i>
+            <input type="text" id="searchInput" class="search-input" placeholder="Search products by name or category...">
+          </div>
+
+          <!-- Category Filter Dropdown -->
+          <div class="filter-wrapper">
+            <label for="categoryFilter" class="filter-label">Category:</label>
+            <select id="categoryFilter" class="filter-select" aria-label="Filter products by category">
+              <option value="">All Categories</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="controls-right">
+          <button id="refreshBtn" class="btn btn-outline" title="Refresh product list" type="button">
+            <i class='bx bx-refresh'></i> Refresh
+          </button>
+          <button id="openAddModalBtn" class="btn btn-primary" type="button">
+            <i class='bx bx-plus'></i> Add Product
+          </button>
+        </div>
+      </section>
+
+      <!-- Product Cards Grid -->
+      <section id="productsGrid" class="products-grid" aria-label="Product Catalog Grid">
+        <!-- Skeleton Loading Placeholders rendered by default -->
+      </section>
+    </div>
+
+    <!-- PAGE VIEW 2: DEDICATED ADD PRODUCT PAGE -->
+    <div id="view-add-product" class="page-view" style="display: none;">
+      <div class="page-card">
+        <div class="page-card-header">
+          <h2 class="page-card-title"><i class='bx bx-plus-circle'></i> Add New Product to Inventory</h2>
+          <p class="page-card-subtitle">Each product creation generates a distinct OpenTelemetry trace correlated across frontend UI, Flask backend, and database.</p>
+        </div>
+        <form id="standaloneProductForm">
+          <div class="form-group">
+            <label for="standaloneProductName" class="form-label">Product Name *</label>
+            <input type="text" id="standaloneProductName" class="form-control" placeholder="e.g. Mechanical Ergonomic Keyboard" required maxlength="100">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="standaloneProductCategory" class="form-label">Category *</label>
+              <input type="text" id="standaloneProductCategory" class="form-control" list="standaloneCategoryDatalist" placeholder="e.g. Electronics, Peripherals" required maxlength="50">
+              <datalist id="standaloneCategoryDatalist"></datalist>
+            </div>
+            <div class="form-group">
+              <label for="standaloneProductPrice" class="form-label">Price (₹) *</label>
+              <input type="number" id="standaloneProductPrice" class="form-control" placeholder="0.00" step="0.01" min="0.01" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="standaloneProductDescription" class="form-label">Product Description</label>
+            <textarea id="standaloneProductDescription" class="form-control form-textarea" placeholder="Provide detailed specifications, features, or notes..." rows="3"></textarea>
+          </div>
+          <div style="display: flex; gap: 12px; margin-top: 24px;">
+            <button type="submit" id="saveStandaloneBtn" class="btn btn-primary">
+              <i class='bx bx-save'></i> Create Product & Ship Trace
+            </button>
+            <button type="button" class="btn btn-outline" onclick="navigateTo('products')">
+              Cancel & Return to Catalog
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- PAGE VIEW 3: INVENTORY ANALYTICS DASHBOARD -->
+    <div id="view-analytics" class="page-view" style="display: none;">
+      <div class="page-card">
+        <div class="page-card-header">
+          <h2 class="page-card-title"><i class='bx bx-pie-chart-alt-2'></i> Catalog Category Distribution & Pricing Analytics</h2>
+          <p class="page-card-subtitle">Live breakdown computed directly from inventory database records.</p>
+        </div>
+        <div class="analytics-grid">
+          <div class="stat-card">
+            <div class="stat-icon categories"><i class='bx bx-trending-up'></i></div>
+            <div class="stat-details">
+              <span class="stat-value" id="analyticsAvgPrice">₹0.00</span>
+              <span class="stat-label">Average Product Price</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon inventory"><i class='bx bx-up-arrow-circle'></i></div>
+            <div class="stat-details">
+              <span class="stat-value" id="analyticsMaxPrice">₹0.00</span>
+              <span class="stat-label">Highest Product Price</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon products"><i class='bx bx-down-arrow-circle'></i></div>
+            <div class="stat-details">
+              <span class="stat-value" id="analyticsMinPrice">₹0.00</span>
+              <span class="stat-label">Lowest Product Price</span>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 16px; color: var(--text-primary);">Category Breakdown (% of Catalog)</h3>
+        <div id="analyticsCategoryBars">
+          <!-- Dynamically populated category progress bars -->
         </div>
       </div>
+    </div>
 
-      <div class="stat-card">
-        <div class="stat-icon categories">
-          <i class='bx bx-category-alt'></i>
+    <!-- PAGE VIEW 4: LIVE TELEMETRY & LOGS CONSOLE -->
+    <div id="view-telemetry" class="page-view" style="display: none;">
+      <div class="page-card">
+        <div class="page-card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h2 class="page-card-title"><i class='bx bx-radar'></i> Live OpenTelemetry & Log Observer Stream</h2>
+            <p class="page-card-subtitle">Real-time client events and page navigation traces exported to the OpenTelemetry Collector on port 4318.</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn btn-outline" onclick="simulateUserJourney()">
+              <i class='bx bx-play-circle'></i> Simulate Multi-Page Journey
+            </button>
+            <button type="button" class="btn btn-outline" onclick="renderTelemetryConsole()">
+              <i class='bx bx-refresh'></i> Refresh Logs
+            </button>
+          </div>
         </div>
-        <div class="stat-details">
-          <span class="stat-value" id="statTotalCategories">0</span>
-          <span class="stat-label">Active Categories</span>
+
+        <div style="margin-bottom: 20px; background: #F8FAFC; border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <span style="font-size: 0.825rem; font-weight: 600; color: var(--text-secondary);">Current Active Trace ID:</span>
+              <code style="display: block; font-size: 0.9rem; font-weight: 700; color: var(--primary);" id="telemetryActiveTrace">...</code>
+            </div>
+            <div>
+              <span style="font-size: 0.825rem; font-weight: 600; color: var(--text-secondary);">Splunk Ingestion Target:</span>
+              <span style="display: block; font-size: 0.85rem; color: #10B981; font-weight: 600;">127.0.0.1:4318 (HTTP OTLP)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="telemetry-log-table-wrap">
+          <table class="telemetry-log-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Level</th>
+                <th>Component</th>
+                <th>Message / Event</th>
+                <th>Trace ID</th>
+              </tr>
+            </thead>
+            <tbody id="telemetryLogBody">
+              <!-- Dynamically populated event rows -->
+            </tbody>
+          </table>
         </div>
       </div>
-
-      <div class="stat-card">
-        <div class="stat-icon inventory">
-          <i class='bx bx-wallet'></i>
-        </div>
-        <div class="stat-details">
-          <span class="stat-value" id="statCatalogValue">₹0.00</span>
-          <span class="stat-label">Total Inventory Value</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- Controls Bar: Category Filter, Search, Refresh, Add Button -->
-    <section class="controls-bar">
-      <div class="controls-left">
-        <!-- Search Input -->
-        <div class="search-box">
-          <i class='bx bx-search'></i>
-          <input type="text" id="searchInput" class="search-input" placeholder="Search products by name or category...">
-        </div>
-
-        <!-- Category Filter Dropdown -->
-        <div class="filter-wrapper">
-          <label for="categoryFilter" class="filter-label">Category:</label>
-          <select id="categoryFilter" class="filter-select" aria-label="Filter products by category">
-            <option value="">All Categories</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="controls-right">
-        <button id="refreshBtn" class="btn btn-outline" title="Refresh product list" type="button">
-          <i class='bx bx-refresh'></i> Refresh
-        </button>
-        <button id="openAddModalBtn" class="btn btn-primary" type="button">
-          <i class='bx bx-plus'></i> Add Product
-        </button>
-      </div>
-    </section>
-
-    <!-- Product Cards Grid -->
-    <section id="productsGrid" class="products-grid" aria-label="Product Catalog Grid">
-      <!-- Skeleton Loading Placeholders rendered by default -->
-    </section>
+    </div>
 
   </main>
 
@@ -1389,7 +1713,9 @@
       editingProduct: null,
       deletingProduct: null,
       isLoading: false,
-      lastTraceId: null
+      lastTraceId: null,
+      currentPage: 'products',
+      eventLogs: []
     };
 
     /**
@@ -1423,6 +1749,25 @@
       deleteProductName: document.getElementById('deleteProductName'),
       cancelDeleteBtn: document.getElementById('cancelDeleteBtn'),
       confirmDeleteBtn: document.getElementById('confirmDeleteBtn'),
+
+      // Standalone Add Product Form
+      standaloneProductForm: document.getElementById('standaloneProductForm'),
+      standaloneProductName: document.getElementById('standaloneProductName'),
+      standaloneProductCategory: document.getElementById('standaloneProductCategory'),
+      standaloneCategoryDatalist: document.getElementById('standaloneCategoryDatalist'),
+      standaloneProductPrice: document.getElementById('standaloneProductPrice'),
+      standaloneProductDescription: document.getElementById('standaloneProductDescription'),
+      saveStandaloneBtn: document.getElementById('saveStandaloneBtn'),
+
+      // Analytics
+      analyticsAvgPrice: document.getElementById('analyticsAvgPrice'),
+      analyticsMaxPrice: document.getElementById('analyticsMaxPrice'),
+      analyticsMinPrice: document.getElementById('analyticsMinPrice'),
+      analyticsCategoryBars: document.getElementById('analyticsCategoryBars'),
+
+      // Telemetry Console
+      telemetryActiveTrace: document.getElementById('telemetryActiveTrace'),
+      telemetryLogBody: document.getElementById('telemetryLogBody'),
 
       // Stats
       statTotalProducts: document.getElementById('statTotalProducts'),
@@ -1811,8 +2156,22 @@
      * Ship client-side logs to backend /api/logs for Splunk Observability ingestion.
      */
     async function logClientEvent(level, message, details = {}) {
+      const traceId = state.lastTraceId || generateRandomHex(16);
+      const timestamp = new Date().toLocaleTimeString();
+
+      // Keep recent 50 logs in state for the live telemetry console
+      state.eventLogs.unshift({
+        timestamp,
+        level: level || 'INFO',
+        component: details.component || 'frontend-ui',
+        message,
+        traceId,
+        details
+      });
+      if (state.eventLogs.length > 50) state.eventLogs.pop();
+      renderTelemetryConsole();
+
       try {
-        const traceId = state.lastTraceId || generateRandomHex(16);
         const fullUrl = resolveApiUrl('/api/logs');
         await fetch(fullUrl, {
           method: 'POST',
@@ -1832,6 +2191,145 @@
         // Prevent log shipping errors from disrupting user experience
         console.warn('[o11y] Failed shipping client log to /api/logs:', e);
       }
+    }
+
+    /**
+     * Client-Side Page Router with Distributed Trace Generation
+     */
+    function navigateTo(pageId, pushState = true) {
+      const validPages = ['products', 'add-product', 'analytics', 'telemetry'];
+      if (!validPages.includes(pageId)) pageId = 'products';
+
+      const prevPage = state.currentPage || 'initial';
+      state.currentPage = pageId;
+
+      // Update Tab Buttons
+      document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.page === pageId);
+      });
+
+      // Update Views
+      document.querySelectorAll('.page-view').forEach(view => {
+        view.style.display = view.id === `view-${pageId}` ? 'block' : 'none';
+      });
+
+      // Update URL Hash
+      if (pushState && window.location.hash !== `#${pageId}`) {
+        window.location.hash = `#${pageId}`;
+      }
+
+      // Generate a fresh W3C Trace Context for this specific page view
+      const pageCtx = generateTraceContext();
+      state.lastTraceId = pageCtx.traceId;
+      updateO11yBadge(pageCtx.traceId);
+
+      // Ship page view trace & log to backend /api/logs (triggers frontend:PAGE span in Splunk APM)
+      logClientEvent('INFO', `Navigated to page: /${pageId}`, {
+        event_type: 'page_view',
+        page_route: `/${pageId}`,
+        previous_page: `/${prevPage}`,
+        trace_id: pageCtx.traceId,
+        span_id: pageCtx.spanId,
+        url: window.location.href
+      });
+
+      // Refresh view-specific data
+      if (pageId === 'products') {
+        if (!state.products.length) loadProducts();
+      } else if (pageId === 'analytics') {
+        renderAnalytics();
+      } else if (pageId === 'telemetry') {
+        renderTelemetryConsole();
+      }
+    }
+
+    /**
+     * Render Analytics Dashboard Metrics
+     */
+    function renderAnalytics() {
+      const products = state.products || [];
+      if (!products.length) {
+        if (elements.analyticsAvgPrice) elements.analyticsAvgPrice.textContent = '₹0.00';
+        if (elements.analyticsMaxPrice) elements.analyticsMaxPrice.textContent = '₹0.00';
+        if (elements.analyticsMinPrice) elements.analyticsMinPrice.textContent = '₹0.00';
+        if (elements.analyticsCategoryBars) elements.analyticsCategoryBars.innerHTML = '<p class="empty-text">No product data loaded yet.</p>';
+        return;
+      }
+
+      const prices = products.map(p => parseFloat(p.price) || 0).filter(p => p > 0);
+      const totalVal = prices.reduce((a, b) => a + b, 0);
+      const avgPrice = prices.length ? totalVal / prices.length : 0;
+      const maxPrice = prices.length ? Math.max(...prices) : 0;
+      const minPrice = prices.length ? Math.min(...prices) : 0;
+
+      if (elements.analyticsAvgPrice) elements.analyticsAvgPrice.textContent = formatPrice(avgPrice);
+      if (elements.analyticsMaxPrice) elements.analyticsMaxPrice.textContent = formatPrice(maxPrice);
+      if (elements.analyticsMinPrice) elements.analyticsMinPrice.textContent = formatPrice(minPrice);
+
+      const counts = {};
+      products.forEach(p => {
+        const cat = (p.category && p.category.trim()) ? p.category.trim() : 'General';
+        counts[cat] = (counts[cat] || 0) + 1;
+      });
+
+      let html = '';
+      for (const [cat, count] of Object.entries(counts)) {
+        const pct = Math.round((count / products.length) * 100);
+        html += `
+          <div class="category-bar-row">
+            <div class="category-bar-header">
+              <span>${escapeHtml(cat)} (${count} products)</span>
+              <span>${pct}%</span>
+            </div>
+            <div class="category-progress-bg">
+              <div class="category-progress-fill" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      }
+      if (elements.analyticsCategoryBars) elements.analyticsCategoryBars.innerHTML = html;
+    }
+
+    /**
+     * Render Live Telemetry Console Stream
+     */
+    function renderTelemetryConsole() {
+      if (elements.telemetryActiveTrace) {
+        elements.telemetryActiveTrace.textContent = state.lastTraceId || 'Init...';
+      }
+      if (!elements.telemetryLogBody) return;
+      if (!state.eventLogs.length) {
+        elements.telemetryLogBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 18px;">No telemetry logs recorded yet. Navigate between pages or trigger actions to stream logs.</td></tr>';
+        return;
+      }
+      elements.telemetryLogBody.innerHTML = state.eventLogs.map(log => {
+        const lvl = (log.level || 'info').toLowerCase();
+        const shortTrace = log.traceId ? `${log.traceId.slice(0, 8)}...${log.traceId.slice(-6)}` : 'none';
+        return `
+          <tr>
+            <td>${escapeHtml(log.timestamp)}</td>
+            <td><span class="badge-level ${lvl}">${escapeHtml(log.level)}</span></td>
+            <td><code>${escapeHtml(log.component)}</code></td>
+            <td>${escapeHtml(log.message)}</td>
+            <td><code class="trace-pill-code">${escapeHtml(shortTrace)}</code></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    /**
+     * Simulate a Multi-Page User Journey to Generate Live Traces
+     */
+    async function simulateUserJourney() {
+      showToast('Simulating multi-page journey for Splunk APM...', 'info');
+      navigateTo('products');
+      await new Promise(r => setTimeout(r, 400));
+      navigateTo('add-product');
+      await new Promise(r => setTimeout(r, 400));
+      navigateTo('analytics');
+      await new Promise(r => setTimeout(r, 400));
+      navigateTo('telemetry');
+      showToast('Multi-page journey complete! Traces dispatched to Splunk Collector.', 'success', state.lastTraceId);
     }
 
     // Client-side unhandled exception tracking
@@ -1951,6 +2449,16 @@
           elements.categoryDatalist.appendChild(opt);
         });
 
+        // Populate Datalist for Standalone Page Input
+        if (elements.standaloneCategoryDatalist) {
+          elements.standaloneCategoryDatalist.innerHTML = '';
+          state.categories.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat;
+            elements.standaloneCategoryDatalist.appendChild(opt);
+          });
+        }
+
         updateStats(state.products, state.categories);
       } catch (error) {
         console.warn('Could not load categories endpoint, using extracted list:', error);
@@ -1964,6 +2472,14 @@
           option.textContent = cat;
           elements.categoryFilter.appendChild(option);
         });
+        if (elements.standaloneCategoryDatalist) {
+          elements.standaloneCategoryDatalist.innerHTML = '';
+          extracted.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat;
+            elements.standaloneCategoryDatalist.appendChild(opt);
+          });
+        }
       }
     }
 
@@ -2090,6 +2606,80 @@
     }
 
     /**
+     * Save Product from Standalone Page View
+     */
+    async function saveStandaloneProduct(event) {
+      if (event) event.preventDefault();
+
+      const name = elements.standaloneProductName.value.trim();
+      const category = elements.standaloneProductCategory.value.trim();
+      const priceVal = elements.standaloneProductPrice.value;
+      const description = elements.standaloneProductDescription.value.trim();
+
+      if (!name) {
+        showToast('Product name is required', 'warning');
+        elements.standaloneProductName.focus();
+        return;
+      }
+
+      const price = parseFloat(priceVal);
+      if (isNaN(price) || price <= 0) {
+        showToast('Please enter a valid price greater than 0', 'warning');
+        elements.standaloneProductPrice.focus();
+        return;
+      }
+
+      const payload = {
+        name,
+        category: category || 'General',
+        price,
+        description
+      };
+
+      const saveBtn = elements.saveStandaloneBtn;
+      const originalHtml = saveBtn.innerHTML;
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Creating...";
+
+      try {
+        const response = await apiFetch('/api/products', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || `Failed to create product (HTTP ${response.status})`);
+        }
+
+        showToast(`Product "${name}" created successfully!`, 'success', state.lastTraceId);
+        logClientEvent('INFO', `Product "${name}" created via Add Product page`, {
+          id: result.id,
+          name: name,
+          category: payload.category,
+          price: payload.price
+        });
+
+        elements.standaloneProductForm.reset();
+        await loadCategories();
+        await loadProducts();
+        navigateTo('products');
+      } catch (error) {
+        console.error('Error creating product:', error);
+        logClientEvent('ERROR', `Product creation failed: ${error.message}`, { error: error.message });
+        showToast(error.message || 'Failed to create product', 'error', state.lastTraceId);
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalHtml;
+      }
+    }
+
+    /**
      * Delete Product (Opens custom confirmation dialog)
      */
     function deleteProduct(id, name) {
@@ -2205,6 +2795,19 @@
         elements.refreshBtn.disabled = false;
         elements.refreshBtn.innerHTML = "<i class='bx bx-refresh'></i> Refresh";
       });
+
+      // Standalone Add Product Form submission
+      if (elements.standaloneProductForm) {
+        elements.standaloneProductForm.addEventListener('submit', saveStandaloneProduct);
+      }
+
+      // Hash change listener for browser back/forward and deep linking
+      window.addEventListener('hashchange', () => {
+        const hashPage = window.location.hash.replace(/^#/, '');
+        if (hashPage && hashPage !== state.currentPage) {
+          navigateTo(hashPage, false);
+        }
+      });
     }
 
     /**
@@ -2212,6 +2815,9 @@
      */
     document.addEventListener('DOMContentLoaded', async () => {
       initEventListeners();
+      // Handle initial route from URL hash or default to products
+      const initialPage = window.location.hash.replace(/^#/, '') || 'products';
+      navigateTo(initialPage, false);
       // Auto-load products and categories on page load
       await loadCategories();
       await loadProducts();
