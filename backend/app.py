@@ -6,11 +6,22 @@ from flask import Flask, g, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 from db import get_connection
-from config import ServerConfig, ProductDomainLimits
-from telemetry import init_telemetry, record_product_operation, get_current_trace_context, get_tracer
+from config import ServerConfig, ProductDomainLimits, TelemetryConfig
+from telemetry import (
+    init_telemetry,
+    record_product_operation,
+    record_frontend_page_view,
+    get_current_trace_context,
+    get_tracer,
+)
 
 app = Flask(__name__)
-CORS(app)
+CORS(
+    app,
+    resources={r"/*": {"origins": "*"}},
+    allow_headers=["Content-Type", "Accept", "traceparent", "tracestate", "X-Requested-With", "Origin"],
+    expose_headers=["traceparent", "tracestate", "Content-Type"],
+)
 init_telemetry(app)
 
 logger = logging.getLogger("myapp.audit")
@@ -66,6 +77,34 @@ def health():
     return jsonify({"status": "healthy", "service": "backend"}), 200
 
 
+@app.get("/api/system/status")
+def system_status():
+    trace_id, span_id = get_current_trace_context()
+    conn_status = "connected"
+    product_count = 0
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM products")
+        product_count = cursor.fetchone()[0]
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        conn_status = f"degraded: {e}"
+
+    return jsonify({
+        "status": "healthy" if "degraded" not in conn_status else "degraded",
+        "service": TelemetryConfig.SERVICE_NAME,
+        "environment": TelemetryConfig.ENVIRONMENT,
+        "database": conn_status,
+        "product_count": product_count,
+        "otel_endpoint": TelemetryConfig.OTLP_ENDPOINT,
+        "otel_enabled": TelemetryConfig.ENABLED,
+        "trace_id": trace_id,
+        "span_id": span_id
+    }), 200
+
+
 FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
 
 
@@ -106,6 +145,7 @@ def ingest_frontend_logs():
 
     if event_type == "page_view" and page_route:
         try:
+            record_frontend_page_view(page_route)
             tracer = get_tracer()
             with tracer.start_as_current_span(f"frontend:PAGE {page_route}") as span:
                 span.set_attribute("page.route", page_route)

@@ -25,6 +25,7 @@ logger = logging.getLogger("telemetry")
 # Global references
 _meter = None
 _product_operations_counter = None
+_frontend_page_views_counter = None
 _telemetry_initialized = False
 _logger_provider = None
 
@@ -113,6 +114,11 @@ def init_telemetry(app) -> bool:
                 description="Total count of product CRUD operations",
                 unit="1",
             )
+            _frontend_page_views_counter = _meter.create_counter(
+                name="frontend.page_views.total",
+                description="Total count of frontend client page view transitions",
+                unit="1",
+            )
         except Exception as metric_err:
             logger.warning(
                 "OTel metrics initialization skipped or encountered error: %s",
@@ -182,6 +188,27 @@ def record_product_operation(operation: str, status: str = "success") -> None:
             )
     except Exception as err:
         logger.debug("Failed recording product operation metric: %s", err)
+
+
+def record_frontend_page_view(route: str, status: str = "success") -> None:
+    """
+    Increment frontend page views metric counter and annotate current span.
+    Safe to call even if telemetry is disabled or uninitialized.
+    """
+    try:
+        current_span = trace.get_current_span()
+        if current_span and current_span.is_recording():
+            current_span.add_event(
+                "frontend.page_view",
+                {"route": route, "status": status},
+            )
+
+        if _frontend_page_views_counter is not None:
+            _frontend_page_views_counter.add(
+                1, {"route": route, "status": status}
+            )
+    except Exception as err:
+        logger.debug("Failed recording frontend page view metric: %s", err)
 
 
 def flush_telemetry():
