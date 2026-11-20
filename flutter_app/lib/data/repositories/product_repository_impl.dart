@@ -12,6 +12,9 @@ class ProductRepositoryImpl implements ProductRepository {
     required this.settingsRepository,
   }) : _apiService = apiService ?? ProductApiService();
 
+  @override
+  String get currentTraceId => _apiService.currentTraceId;
+
   Future<String> _getBaseUrl() => settingsRepository.getBackendUrl();
 
   @override

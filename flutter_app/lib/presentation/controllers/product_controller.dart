@@ -27,6 +27,7 @@ class ProductController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isSaving => _isSaving;
   String? get errorMessage => _errorMessage;
+  String get currentTraceId => repository.currentTraceId;
 
   DashboardStats get stats => DashboardStats.fromProducts(_products, _categories);
 

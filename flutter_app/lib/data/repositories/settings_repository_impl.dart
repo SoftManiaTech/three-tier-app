@@ -13,6 +13,9 @@ class SettingsRepositoryImpl implements SettingsRepository {
         _apiService = apiService ?? ProductApiService();
 
   @override
+  String get currentTraceId => _apiService.currentTraceId;
+
+  @override
   Future<String> getBackendUrl() {
     return _localStorage.getBackendUrl();
   }

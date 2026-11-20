@@ -1,4 +1,7 @@
 abstract class SettingsRepository {
+  /// Current W3C OpenTelemetry Trace ID
+  String get currentTraceId;
+
   /// Retrieves the saved backend base URL
   Future<String> getBackendUrl();
 

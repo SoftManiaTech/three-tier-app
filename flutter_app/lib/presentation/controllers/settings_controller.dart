@@ -22,6 +22,7 @@ class SettingsController extends ChangeNotifier {
   SettingsController({required this.repository});
 
   String get backendUrl => _backendUrl;
+  String get currentTraceId => repository.currentTraceId;
   ConnectionTestStatus get testStatus => _testStatus;
   String? get statusMessage => _statusMessage;
   bool get isLoading => _isLoading;

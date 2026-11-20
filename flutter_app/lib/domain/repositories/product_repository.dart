@@ -1,6 +1,9 @@
 import '../models/product.dart';
 
 abstract class ProductRepository {
+  /// Current W3C OpenTelemetry Trace ID
+  String get currentTraceId;
+
   /// Fetches products, optionally filtered by category
   Future<List<Product>> getProducts({String? category});
 
