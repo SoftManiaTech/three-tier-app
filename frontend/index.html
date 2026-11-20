@@ -1749,8 +1749,8 @@
               <i class='bx bx-globe'></i>
               <span>Frontend HTTP Origin</span>
             </div>
-            <div class="health-status-badge online" id="healthFrontendStatus">Online (HTTP :8080)</div>
-            <div class="health-detail-text">Host: <code id="healthFrontendHost">127.0.0.1:8080</code></div>
+            <div class="health-status-badge online" id="healthFrontendStatus">Online (HTTP)</div>
+            <div class="health-detail-text">Host: <code id="healthFrontendHost">Detecting...</code></div>
             <div class="health-detail-text">Mode: <strong>Independent Server</strong></div>
           </div>
 
@@ -1779,7 +1779,7 @@
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
             <div>
               <h4 style="margin: 0 0 6px 0; font-size: 1rem; color: var(--text-primary);"><i class='bx bx-radar'></i> Cross-Origin Health Probe & Distributed Trace</h4>
-              <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">Sends a cross-origin probe from frontend (port 8080) to backend (port 5000) with a live W3C trace context.</p>
+              <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">Sends a cross-origin probe from frontend to backend (port 5000) with a live W3C trace context.</p>
             </div>
             <button type="button" class="btn btn-primary" id="pingBackendBtn" onclick="testBackendHealthPing()">
               <i class='bx bx-send'></i> Ping Backend & Emit Trace
@@ -2511,8 +2511,12 @@
      * Render System Health View
      */
     async function renderSystemHealth() {
+      const currentPort = window.location.port || (window.location.protocol === 'https:' ? '443' : '80');
+      const currentHost = window.location.host || `127.0.0.1:${currentPort}`;
       const frontendHostEl = document.getElementById('healthFrontendHost');
-      if (frontendHostEl) frontendHostEl.textContent = window.location.host || '127.0.0.1:8080';
+      const frontendStatusEl = document.getElementById('healthFrontendStatus');
+      if (frontendHostEl) frontendHostEl.textContent = currentHost;
+      if (frontendStatusEl) frontendStatusEl.textContent = `Online (HTTP :${currentPort})`;
 
       const backendBadge = document.getElementById('healthBackendStatus');
       try {
