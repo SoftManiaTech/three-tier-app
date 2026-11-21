@@ -854,7 +854,7 @@
     }
 
     .form-group {
-      margin-bottom: 20px;
+      margin-bottom: 22px;
     }
 
     .form-group:last-child {
@@ -862,20 +862,45 @@
     }
 
     .form-label {
-      display: block;
-      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.9rem;
       font-weight: 600;
       color: var(--text-primary);
-      margin-bottom: 6px;
+      margin-bottom: 8px;
+    }
+
+    .form-label-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-label-title i {
+      color: var(--primary);
+      font-size: 1.1rem;
     }
 
     .form-label .required {
       color: var(--danger);
+      font-weight: 700;
       margin-left: 2px;
+    }
+
+    .form-label .optional-tag {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: #F1F5F9;
+      border: 1px solid var(--border-color);
+      padding: 2px 8px;
+      border-radius: 4px;
     }
 
     .input-icon-wrap {
       position: relative;
+      width: 100%;
     }
 
     .input-icon-wrap i {
@@ -883,41 +908,185 @@
       left: 14px;
       top: 50%;
       transform: translateY(-50%);
-      color: var(--text-muted);
-      font-size: 1.1rem;
+      color: #94A3B8;
+      font-size: 1.25rem;
+      pointer-events: none;
+      transition: color 0.2s ease, transform 0.2s ease;
+      z-index: 2;
     }
 
-    .form-input, .form-textarea {
-      width: 100%;
-      padding: 10px 14px;
-      font-size: 0.925rem;
+    .input-icon-wrap.textarea-icon-wrap i {
+      top: 18px;
+      transform: none;
+    }
+
+    .form-input, .form-control, .form-textarea {
+      display: block;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      min-height: 44px;
+      padding: 11px 16px;
+      font-size: 0.95rem;
+      font-weight: 500;
       font-family: inherit;
-      border: 1px solid var(--border-color);
+      border: 1.5px solid var(--border-color);
       border-radius: var(--radius-btn);
       background-color: #FFFFFF;
       color: var(--text-primary);
       outline: none;
-      transition: border-color var(--transition), box-shadow var(--transition);
+      transition: border-color var(--transition), box-shadow var(--transition), background-color var(--transition);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
     }
 
-    .input-icon-wrap .form-input {
-      padding-left: 38px;
+    .form-input::placeholder, .form-control::placeholder, .form-textarea::placeholder {
+      color: #94A3B8;
+      font-size: 0.92rem;
+      font-weight: 400;
+    }
+
+    .form-input:hover, .form-control:hover, .form-textarea:hover {
+      border-color: #CBD5E1;
+    }
+
+    .form-input:focus, .form-control:focus, .form-textarea:focus {
+      border-color: var(--primary) !important;
+      background-color: #FFFFFF;
+      box-shadow: 0 0 0 3.5px rgba(108, 99, 255, 0.16) !important;
+    }
+
+    .input-icon-wrap .form-input,
+    .input-icon-wrap .form-control,
+    .input-icon-wrap .form-textarea {
+      padding-left: 44px !important;
+    }
+
+    .input-icon-wrap:focus-within i {
+      color: var(--primary);
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    .input-icon-wrap.textarea-icon-wrap:focus-within i {
+      color: var(--primary);
+      transform: scale(1.1);
     }
 
     .form-textarea {
       resize: vertical;
-      min-height: 90px;
-    }
-
-    .form-input:focus, .form-textarea:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.15);
+      min-height: 105px;
+      line-height: 1.55;
     }
 
     .form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    /* Helper meta row and character counter */
+    .form-field-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .form-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .form-hint i {
+      color: var(--primary);
+      font-size: 0.9rem;
+    }
+
+    .char-counter {
+      font-variant-numeric: tabular-nums;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* Interactive quick-select suggestion chips */
+    .preset-chips-group {
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chips-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-right: 2px;
+    }
+
+    .chips-label i {
+      color: var(--primary);
+    }
+
+    .chips-list {
+      display: inline-flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .category-chip {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      border: 1px solid rgba(108, 99, 255, 0.22);
+      border-radius: 9999px;
+      padding: 3px 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .category-chip:hover {
+      background: var(--primary);
+      color: #FFFFFF;
+      border-color: var(--primary);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(108, 99, 255, 0.3);
+    }
+
+    .category-chip:active {
+      transform: translateY(0);
+    }
+
+    .price-chip {
+      background: #ECFDF5;
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .price-chip:hover {
+      background: #10B981;
+      color: #FFFFFF;
+      border-color: #10B981;
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+    }
+
+    /* Form actions toolbar */
+    .form-actions-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+      flex-wrap: wrap;
     }
 
     .modal-footer {
@@ -1574,31 +1743,94 @@
           <p class="page-card-subtitle">Each product creation generates a distinct OpenTelemetry trace correlated across frontend UI, Flask backend, and database.</p>
         </div>
         <form id="standaloneProductForm">
+          <!-- Product Name -->
           <div class="form-group">
-            <label for="standaloneProductName" class="form-label">Product Name *</label>
-            <input type="text" id="standaloneProductName" class="form-control" placeholder="e.g. Mechanical Ergonomic Keyboard" required maxlength="100">
+            <label for="standaloneProductName" class="form-label">
+              <span class="form-label-title"><i class='bx bx-purchase-tag'></i> Product Name</span>
+              <span class="required">*</span>
+            </label>
+            <div class="input-icon-wrap">
+              <i class='bx bx-font'></i>
+              <input type="text" id="standaloneProductName" class="form-input form-control" placeholder="e.g. Ergonomic Wireless Mechanical Keyboard" required maxlength="100">
+            </div>
+            <div class="form-field-meta">
+              <span class="form-hint"><i class='bx bx-info-circle'></i> Enter a clear, customer-friendly product name</span>
+              <span id="standaloneNameCharCount" class="char-counter">0 / 100</span>
+            </div>
           </div>
+
+          <!-- Category & Price Row -->
           <div class="form-row">
             <div class="form-group">
-              <label for="standaloneProductCategory" class="form-label">Category *</label>
-              <input type="text" id="standaloneProductCategory" class="form-control" list="standaloneCategoryDatalist" placeholder="e.g. Electronics, Peripherals" required maxlength="50">
-              <datalist id="standaloneCategoryDatalist"></datalist>
+              <label for="standaloneProductCategory" class="form-label">
+                <span class="form-label-title"><i class='bx bx-grid-alt'></i> Category</span>
+                <span class="required">*</span>
+              </label>
+              <div class="input-icon-wrap">
+                <i class='bx bx-category-alt'></i>
+                <input type="text" id="standaloneProductCategory" class="form-input form-control" list="standaloneCategoryDatalist" placeholder="e.g. Electronics, Peripherals" required maxlength="50">
+                <datalist id="standaloneCategoryDatalist"></datalist>
+              </div>
+              <div class="preset-chips-group">
+                <span class="chips-label"><i class='bx bx-sparkles'></i> Quick Select:</span>
+                <div class="chips-list">
+                  <button type="button" class="category-chip" onclick="selectStandaloneCategory('Electronics')">Electronics</button>
+                  <button type="button" class="category-chip" onclick="selectStandaloneCategory('Peripherals')">Peripherals</button>
+                  <button type="button" class="category-chip" onclick="selectStandaloneCategory('Audio')">Audio</button>
+                  <button type="button" class="category-chip" onclick="selectStandaloneCategory('Gaming')">Gaming</button>
+                  <button type="button" class="category-chip" onclick="selectStandaloneCategory('Office')">Office</button>
+                  <button type="button" class="category-chip" onclick="selectStandaloneCategory('Accessories')">Accessories</button>
+                </div>
+              </div>
             </div>
+
             <div class="form-group">
-              <label for="standaloneProductPrice" class="form-label">Price (₹) *</label>
-              <input type="number" id="standaloneProductPrice" class="form-control" placeholder="0.00" step="0.01" min="0.01" required>
+              <label for="standaloneProductPrice" class="form-label">
+                <span class="form-label-title"><i class='bx bx-wallet'></i> Price (₹)</span>
+                <span class="required">*</span>
+              </label>
+              <div class="input-icon-wrap">
+                <i class='bx bx-rupee'></i>
+                <input type="number" id="standaloneProductPrice" class="form-input form-control" placeholder="0.00" step="0.01" min="0.01" required>
+              </div>
+              <div class="preset-chips-group">
+                <span class="chips-label"><i class='bx bx-purchase-tag-alt'></i> Quick Price:</span>
+                <div class="chips-list">
+                  <button type="button" class="category-chip price-chip" onclick="selectStandalonePrice(499)">₹499</button>
+                  <button type="button" class="category-chip price-chip" onclick="selectStandalonePrice(999)">₹999</button>
+                  <button type="button" class="category-chip price-chip" onclick="selectStandalonePrice(1999)">₹1,999</button>
+                  <button type="button" class="category-chip price-chip" onclick="selectStandalonePrice(4999)">₹4,999</button>
+                  <button type="button" class="category-chip price-chip" onclick="selectStandalonePrice(9999)">₹9,999</button>
+                </div>
+              </div>
             </div>
           </div>
+
+          <!-- Product Description -->
           <div class="form-group">
-            <label for="standaloneProductDescription" class="form-label">Product Description</label>
-            <textarea id="standaloneProductDescription" class="form-control form-textarea" placeholder="Provide detailed specifications, features, or notes..." rows="3"></textarea>
+            <label for="standaloneProductDescription" class="form-label">
+              <span class="form-label-title"><i class='bx bx-detail'></i> Product Description</span>
+              <span class="optional-tag">Optional</span>
+            </label>
+            <div class="input-icon-wrap textarea-icon-wrap">
+              <i class='bx bx-text'></i>
+              <textarea id="standaloneProductDescription" class="form-input form-control form-textarea" placeholder="Provide detailed specifications, features, warranty, or customer highlights..." rows="3"></textarea>
+            </div>
+            <div class="form-field-meta">
+              <span class="form-hint"><i class='bx bx-info-circle'></i> Detailed notes will be stored in MySQL and indexed in OpenTelemetry traces</span>
+            </div>
           </div>
-          <div style="display: flex; gap: 12px; margin-top: 24px;">
+
+          <!-- Actions Toolbar -->
+          <div class="form-actions-toolbar">
             <button type="submit" id="saveStandaloneBtn" class="btn btn-primary">
-              <i class='bx bx-save'></i> Create Product & Ship Trace
+              <i class='bx bx-cloud-upload'></i> Create Product & Ship Trace
             </button>
             <button type="button" class="btn btn-outline" onclick="navigateTo('products')">
-              Cancel & Return to Catalog
+              <i class='bx bx-arrow-back'></i> Cancel & Return to Catalog
+            </button>
+            <button type="button" class="btn btn-outline" onclick="resetStandaloneForm()" style="margin-left: auto;">
+              <i class='bx bx-reset'></i> Clear Form
             </button>
           </div>
         </form>
@@ -1836,11 +2068,12 @@
           <!-- Product Name -->
           <div class="form-group">
             <label for="productName" class="form-label">
-              Product Name <span class="required">*</span>
+              <span class="form-label-title"><i class='bx bx-purchase-tag'></i> Product Name</span>
+              <span class="required">*</span>
             </label>
             <div class="input-icon-wrap">
-              <i class='bx bx-tag-alt'></i>
-              <input type="text" id="productName" name="name" class="form-input" 
+              <i class='bx bx-font'></i>
+              <input type="text" id="productName" name="name" class="form-input form-control" 
                      placeholder="e.g. Wireless Noise-Cancelling Headphones" 
                      maxlength="100" required>
             </div>
@@ -1850,11 +2083,12 @@
             <!-- Category -->
             <div class="form-group">
               <label for="productCategory" class="form-label">
-                Category <span class="required">*</span>
+                <span class="form-label-title"><i class='bx bx-grid-alt'></i> Category</span>
+                <span class="required">*</span>
               </label>
               <div class="input-icon-wrap">
-                <i class='bx bx-category'></i>
-                <input type="text" id="productCategory" name="category" class="form-input" 
+                <i class='bx bx-category-alt'></i>
+                <input type="text" id="productCategory" name="category" class="form-input form-control" 
                        list="categoryDatalist" placeholder="e.g. Electronics" required>
                 <datalist id="categoryDatalist"></datalist>
               </div>
@@ -1863,11 +2097,12 @@
             <!-- Price -->
             <div class="form-group">
               <label for="productPrice" class="form-label">
-                Price (₹) <span class="required">*</span>
+                <span class="form-label-title"><i class='bx bx-wallet'></i> Price (₹)</span>
+                <span class="required">*</span>
               </label>
               <div class="input-icon-wrap">
                 <i class='bx bx-rupee'></i>
-                <input type="number" id="productPrice" name="price" class="form-input" 
+                <input type="number" id="productPrice" name="price" class="form-input form-control" 
                        placeholder="0.00" min="0.01" step="0.01" required>
               </div>
             </div>
@@ -1876,10 +2111,14 @@
           <!-- Description -->
           <div class="form-group">
             <label for="productDescription" class="form-label">
-              Description
+              <span class="form-label-title"><i class='bx bx-detail'></i> Description</span>
+              <span class="optional-tag">Optional</span>
             </label>
-            <textarea id="productDescription" name="description" class="form-textarea" 
-                      rows="3" placeholder="Provide a detailed description of the product..."></textarea>
+            <div class="input-icon-wrap textarea-icon-wrap">
+              <i class='bx bx-text'></i>
+              <textarea id="productDescription" name="description" class="form-input form-control form-textarea" 
+                        rows="3" placeholder="Provide a detailed description of the product..."></textarea>
+            </div>
           </div>
         </div>
 
@@ -3094,12 +3333,53 @@
     }
 
     /**
+     * Standalone Form Quick-Selection Helpers
+     */
+    function selectStandaloneCategory(category) {
+      if (elements.standaloneProductCategory) {
+        elements.standaloneProductCategory.value = category;
+        elements.standaloneProductCategory.focus();
+        elements.standaloneProductCategory.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+
+    function selectStandalonePrice(price) {
+      if (elements.standaloneProductPrice) {
+        elements.standaloneProductPrice.value = price;
+        elements.standaloneProductPrice.focus();
+        elements.standaloneProductPrice.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+
+    function resetStandaloneForm() {
+      if (elements.standaloneProductForm) {
+        elements.standaloneProductForm.reset();
+        const charCounter = document.getElementById('standaloneNameCharCount');
+        if (charCounter) charCounter.textContent = '0 / 100';
+      }
+    }
+
+    window.selectStandaloneCategory = selectStandaloneCategory;
+    window.selectStandalonePrice = selectStandalonePrice;
+    window.resetStandaloneForm = resetStandaloneForm;
+
+    /**
      * Event Listeners Registration
      */
     function initEventListeners() {
       // Add Product Buttons (Hero, Toolbar & FAB)
       elements.openAddModalBtn.addEventListener('click', () => openModal());
       elements.fabAddBtn.addEventListener('click', () => openModal());
+
+      // Standalone Add Product Form Name character counter
+      if (elements.standaloneProductName) {
+        elements.standaloneProductName.addEventListener('input', (e) => {
+          const charCounter = document.getElementById('standaloneNameCharCount');
+          if (charCounter) {
+            charCounter.textContent = `${e.target.value.length} / 100`;
+          }
+        });
+      }
 
       // Modal Close Buttons
       elements.closeModalBtn.addEventListener('click', closeModal);
