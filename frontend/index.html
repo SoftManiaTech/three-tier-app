@@ -1760,7 +1760,7 @@
               <span>Backend REST API</span>
             </div>
             <div class="health-status-badge online" id="healthBackendStatus">Checking...</div>
-            <div class="health-detail-text">Host: <code>http://127.0.0.1:5000</code></div>
+            <div class="health-detail-text">Host: <code id="healthBackendHost">Auto-resolving...</code></div>
             <div class="health-detail-text">CORS: <strong>Enabled (* with traceparent)</strong></div>
           </div>
 
@@ -1779,7 +1779,7 @@
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
             <div>
               <h4 style="margin: 0 0 6px 0; font-size: 1rem; color: var(--text-primary);"><i class='bx bx-radar'></i> Cross-Origin Health Probe & Distributed Trace</h4>
-              <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">Sends a cross-origin probe from frontend to backend (port 5000) with a live W3C trace context.</p>
+              <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">Sends a health probe from frontend to backend with a live W3C trace context.</p>
             </div>
             <button type="button" class="btn btn-primary" id="pingBackendBtn" onclick="testBackendHealthPing()">
               <i class='bx bx-send'></i> Ping Backend & Emit Trace
@@ -2352,10 +2352,10 @@
     }
 
     // Automatic API base resolution:
-    // If the frontend is running on port 5000, use relative paths '/api/...'.
-    // If running separately (e.g. port 8080 via python -m http.server), target http://127.0.0.1:5000.
-    const API_BASE = (window.location.port === '5000' || window.location.protocol === 'file:')
-      ? (window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : '')
+    // If frontend is served over HTTP/HTTPS (e.g. Apache on port 80 or reverse proxy), use same-origin relative path ''
+    // If opened via file://, fallback to local backend on port 5000 / 8000.
+    const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
+      ? ''
       : 'http://127.0.0.1:5000';
 
     function resolveApiUrl(url) {
@@ -2515,17 +2515,24 @@
       const currentHost = window.location.host || `127.0.0.1:${currentPort}`;
       const frontendHostEl = document.getElementById('healthFrontendHost');
       const frontendStatusEl = document.getElementById('healthFrontendStatus');
+      const backendHostEl = document.getElementById('healthBackendHost');
       if (frontendHostEl) frontendHostEl.textContent = currentHost;
       if (frontendStatusEl) frontendStatusEl.textContent = `Online (HTTP :${currentPort})`;
+      if (backendHostEl) backendHostEl.textContent = API_BASE ? API_BASE : `${window.location.origin}/api (Backend :8000 & :5000)`;
 
       const backendBadge = document.getElementById('healthBackendStatus');
       try {
-        const resp = await apiFetch('/api/system/status');
-        if (resp.ok) {
+        let resp = await apiFetch('/api/system/status').catch(() => null);
+        if (!resp || !resp.ok) {
+          resp = await apiFetch('/api/health').catch(() => null);
+        }
+        if (resp && resp.ok) {
           const data = await resp.json();
           if (backendBadge) {
             backendBadge.className = 'health-status-badge online';
-            backendBadge.textContent = `Online (${data.service})`;
+            backendBadge.style.background = '';
+            backendBadge.style.color = '';
+            backendBadge.textContent = `Online (${data.service || 'backend'})`;
           }
         } else {
           if (backendBadge) {
@@ -2556,7 +2563,10 @@
 
       const t0 = performance.now();
       try {
-        const response = await apiFetch('/api/system/status');
+        let response = await apiFetch('/api/system/status').catch(() => null);
+        if (!response || !response.ok) {
+          response = await apiFetch('/api/health');
+        }
         const latency = Math.round(performance.now() - t0);
         const data = await response.json();
 
@@ -2565,8 +2575,8 @@
           resultBox.innerHTML = `
             <div style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 6px; padding: 12px; color: #065F46;">
               <strong><i class='bx bx-check-circle'></i> Probe Success (${latency}ms)</strong><br>
-              Backend Service: <code>${escapeHtml(data.service)}</code> | Database: <code>${escapeHtml(data.database)}</code> | Products: <code>${data.product_count}</code><br>
-              Trace ID: <code>${escapeHtml(state.lastTraceId)}</code> (Shipped to Splunk OTel Collector)
+              Backend Service: <code>${escapeHtml(data.service || 'backend')}</code> | Database: <code>${escapeHtml(data.database || 'connected')}</code> | Products: <code>${data.product_count !== undefined ? data.product_count : 'Active'}</code><br>
+              Trace ID: <code>${escapeHtml(state.lastTraceId)}</code> (Correlated with Backend & DB)
             </div>
           `;
         }
